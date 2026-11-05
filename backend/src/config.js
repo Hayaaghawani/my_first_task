@@ -9,4 +9,9 @@ module.exports = {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
   },
+  memcached: {
+    host: process.env.MEMCACHED_HOST || 'localhost',
+    port: Number(process.env.MEMCACHED_PORT || 11211),
+  },
+  frontendOrigin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
 };

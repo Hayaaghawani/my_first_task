@@ -1,5 +1,8 @@
 const db = require('../db');
+const cache = require('../cache');
 const { BASIC_LISTING, CUSTOM_PARAMS } = require('../queries/listing');
+
+const LISTING_CACHE_TTL_SECONDS = 3600;
 
 function pickValue(row) {
   if (row.value_1_integer !== null && row.value_1_integer !== undefined) {
@@ -58,6 +61,13 @@ function toListing(row, customParams) {
 }
 
 async function getListing(id) {
+  const cacheKey = `listing:${id}`;
+  const cachedListing = await cache.get(cacheKey);
+
+  if (cachedListing !== null) {
+    return cachedListing;
+  }
+
   const [listingRows] = await db.query(BASIC_LISTING, [id]);
 
   if (!listingRows.length) {
@@ -66,7 +76,10 @@ async function getListing(id) {
 
   const [customRows] = await db.query(CUSTOM_PARAMS, [id]);
 
-  return toListing(listingRows[0], customRows.map(toCustomParam));
+  const listing = toListing(listingRows[0], customRows.map(toCustomParam));
+  await cache.set(cacheKey, listing, LISTING_CACHE_TTL_SECONDS);
+
+  return listing;
 }
 
 module.exports = { getListing };
