@@ -281,6 +281,13 @@ td {
   overflow-wrap: anywhere;
 }
 
+.custom-param-values {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+}
+
 @media (max-width: 540px) {
   .page-shell {
     padding: 40px 0;
