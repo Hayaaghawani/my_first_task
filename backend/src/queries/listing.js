@@ -4,7 +4,7 @@ const BASIC_LISTING = `
     p.title,
     p.description,
     p.price            AS price_amount,
-    p.price_currency,
+    cu.code      AS price_currency,
     p.has_price,
     p.cities_id        AS city_id,
     c.name             AS city_name,
@@ -13,6 +13,7 @@ const BASIC_LISTING = `
   FROM posts p
   LEFT JOIN cities c ON c.id = p.cities_id
   LEFT JOIN neighborhood n ON n.id = p.neighborhood_id
+  Left JOIN currency cu ON p.price_currency = cu.id
   WHERE p.id = ?
 `;
 
