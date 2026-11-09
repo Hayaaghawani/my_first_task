@@ -1,6 +1,6 @@
 # Listing lookup frontend
 
-A small React page for looking up an OpenSooq listing by ID through the backend API. It displays the listing's title, description, price, location, and custom parameters, along with loading and API error states.
+A small React app for looking up an OpenSooq listing by ID and browsing paginated Solr listings through the backend API. The ID lookup displays listing details and custom parameters; browsing supports country, category, page size, and city language.
 
 ## Prerequisites
 
@@ -24,7 +24,7 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints (usually `http://localhost:5173`).
+Open the URL Vite prints (usually `http://localhost:5173`). Use **Find by ID** for the MySQL-backed lookup, or **Browse listings** to search the Solr endpoint. The browse view defaults to Jordan (`jo`) and Cars For Sale (`CarsForSale`) and provides next/previous page controls.
 
 ## Build and serve for production
 

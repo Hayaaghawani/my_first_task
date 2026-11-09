@@ -34,3 +34,35 @@ export async function fetchListing(id) {
     throw new Error('Something went wrong');
   }
 }
+
+export async function fetchListings({ country, category, page, perPage, lang }) {
+  const params = new URLSearchParams({
+    country,
+    category,
+    page: String(page),
+    per_page: String(perPage),
+    lang,
+  });
+
+  let response;
+  try {
+    response = await fetch(`${API_URL}/listings?${params}`);
+  } catch {
+    throw new Error('Could not connect to the listings service');
+  }
+
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    throw new Error('The listings service returned an invalid response');
+  }
+
+  if (!response.ok) {
+    const field = body?.error?.field;
+    const message = body?.error?.message;
+    throw new Error(field ? `${field}: ${message}` : message || 'Could not load listings');
+  }
+
+  return body;
+}

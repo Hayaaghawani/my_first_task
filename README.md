@@ -1,6 +1,6 @@
 # OpenSooq listing lookup
 
-This project is a small, read-only listing lookup application. The Express backend accepts a listing ID, fetches listing data from MySQL, and caches successful responses in Memcached for one hour; the React frontend provides a page to search by ID and view the result.
+This project is a small, read-only listing application. The Express backend reads an individual listing from MySQL (caching successful responses in Memcached for one hour) and provides a paginated `/listings` endpoint backed by Solr; the React frontend has separate views to search by ID or browse Solr results.
 
 ## Project structure
 
@@ -9,8 +9,13 @@ backend/
   src/
     index.js                 # Express app and HTTP server
     config.js                # Environment configuration
+    config/countries.js      # Country-code to Solr-core mapping
     db.js                    # MySQL connection pool
     cache.js                 # Memcached get/set helpers
+    solr.js                  # Solr select URL, timeout, and response validation
+    validation/listings.js  # /listings query validation
+    services/listings.js    # Solr result mapping and paging metadata
+    routes/listings.js      # GET /listings
     routes/listing.js        # GET /api/listing/:id
     services/listing.js      # Cache, query, and response formatting
     queries/listing.js       # Parameterized SELECT statements
@@ -76,13 +81,21 @@ npm install
 npm run dev
 ```
 
-Open the Vite URL printed in the terminal (usually `http://localhost:5173`). Enter a positive integer listing ID and select **Search**. The API endpoint can also be tested directly:
+Open the Vite URL printed in the terminal (usually `http://localhost:5173`). Use **Find by ID** to enter a positive integer ID, or select **Browse listings** to search Solr by country/category and page through results. The ID lookup API endpoint can also be tested directly:
 
 ```text
 GET http://localhost:3001/api/listing/12345
 ```
 
 Replace `12345` with a listing ID available in the configured database. The API responds with `400` for an invalid ID, `404` when no listing is found, and a generic `500` response for server errors.
+
+The Solr-backed listing endpoint is also available:
+
+```text
+GET http://localhost:3001/listings?country=jo&category=CarsForSale&page=1&per_page=20&lang=ar
+```
+
+It supports configurable country cores, category filters, pagination, and Arabic or English city names. Invalid or missing query parameters return `400`; an unavailable or timing-out Solr server returns `502`. See the [backend README](./backend/README.md#solr-listings-endpoint) for parameter rules, Solr configuration, response details, and tests.
 
 ## Production
 
