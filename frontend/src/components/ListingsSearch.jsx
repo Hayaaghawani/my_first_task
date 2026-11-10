@@ -11,6 +11,7 @@ const DEFAULT_QUERY = {
   lang: 'ar',
   sort_by: 'record_posted_time_i',
   sort_order: 'desc',
+  title: '',
 };
 
 function readQueryFromUrl() {
@@ -19,6 +20,9 @@ function readQueryFromUrl() {
     Object.keys(DEFAULT_QUERY).map((key) => [key, search.get(key) ?? DEFAULT_QUERY[key]]),
   );
   const canonicalQuery = new URLSearchParams(query);
+  if (!query.title.trim()) {
+    canonicalQuery.delete('title');
+  }
   const canonicalUrl = `/listings?${canonicalQuery}`;
 
   if (`${window.location.pathname}${window.location.search}` !== canonicalUrl) {
@@ -30,6 +34,9 @@ function readQueryFromUrl() {
 
 function buildPageUrl(query, page) {
   const params = new URLSearchParams({ ...query, page: String(page) });
+  if (!query.title.trim()) {
+    params.delete('title');
+  }
   return `/listings?${params}`;
 }
 
@@ -106,6 +113,17 @@ export default function ListingsSearch() {
               defaultValue={query.category}
               required
               autoComplete="off"
+            />
+          </label>
+          <label>
+            Title contains
+            <input
+              name="title"
+              type="search"
+              defaultValue={query.title}
+              maxLength={200}
+              autoComplete="off"
+              placeholder="Search listing titles"
             />
           </label>
           <label>

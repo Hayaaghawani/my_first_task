@@ -11,6 +11,10 @@ const SELECTED_FIELDS = [
   'image_count_i',
 ];
 
+function escapeSolrPhrase(value) {
+  return value.replace(/[+\-!(){}[\]^"~*?:\\/]/g, '\\$&');
+}
+
 class SolrError extends Error {
   constructor(message, options) {
     super(message, options);
@@ -28,6 +32,7 @@ function buildSelectUrl({
   lang,
   sortBy = 'record_posted_time_i',
   sortOrder = 'desc',
+  title = '',
 }) {
   const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   const url = new URL(`${countryCore}/select`, normalizedBaseUrl);
@@ -35,6 +40,9 @@ function buildSelectUrl({
   url.searchParams.append('fq', `tag_2_reporting_name_s:${category}`);
   url.searchParams.append('fq', 'duplicate_i:0');
   url.searchParams.append('fq', `record_expiration_time_i:[${nowSeconds} TO *]`);
+  if (title) {
+    url.searchParams.append('fq', `title_t:"${escapeSolrPhrase(title)}"`);
+  }
   const sort = sortBy === 'post_id'
     ? `post_id ${sortOrder}`
     : `record_posted_time_i ${sortOrder},post_id ${sortOrder}`;
@@ -75,4 +83,4 @@ async function searchListings(options, { fetchImpl = fetch, timeoutMs = solrTime
   return { total: result.numFound, docs: result.docs };
 }
 
-module.exports = { SolrError, buildSelectUrl, searchListings };
+module.exports = { SolrError, buildSelectUrl, escapeSolrPhrase, searchListings };

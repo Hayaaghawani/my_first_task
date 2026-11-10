@@ -44,6 +44,7 @@ export async function fetchListings({
   lang,
   sort_by: sortBy = 'record_posted_time_i',
   sort_order: sortOrder = 'desc',
+  title = '',
 }) {
   const params = new URLSearchParams({
     country,
@@ -54,6 +55,9 @@ export async function fetchListings({
     sort_by: sortBy,
     sort_order: sortOrder,
   });
+  if (title.trim()) {
+    params.set('title', title.trim());
+  }
 
   let response;
   try {

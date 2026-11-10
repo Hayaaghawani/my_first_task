@@ -27,7 +27,7 @@ npm run dev
 Open the URL Vite prints (usually `http://localhost:5173`). The app has separate pages:
 
 - `/search-listing?id=289115914` looks up one listing through MySQL. The `id` parameter is optional until you search.
-- `/listings?country=jo&category=CarsForSale&page=1&per_page=20&lang=ar&sort_by=record_posted_time_i&sort_order=desc` browses Solr listings. Search filters, language, sorting, and pagination live in the URL, so refreshing or sharing the URL keeps the same search. Country is fixed to `jo`; use the language selector in the page header for Arabic or English city names.
+- `/listings?country=jo&category=CarsForSale&page=1&per_page=20&lang=ar&sort_by=record_posted_time_i&sort_order=desc&title=Toyota` browses Solr listings. Search filters (including the optional title phrase), language, sorting, and pagination live in the URL, so refreshing or sharing the URL keeps the same search. Country is fixed to `jo`; use the language selector in the page header for Arabic or English city names.
 
 The Solr endpoint maps image filenames to the remote preview service at `https://arbokv2-images.sooqdev1.com/previews/640x480`.
 

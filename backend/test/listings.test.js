@@ -28,6 +28,7 @@ test('validates country, category, paging, and language parameters', () => {
     lang: 'ar',
     sortBy: 'record_posted_time_i',
     sortOrder: 'desc',
+    title: '',
   });
 
   for (const [query, field] of [
@@ -41,6 +42,8 @@ test('validates country, category, paging, and language parameters', () => {
     [{ country: 'jo', category: 'CarsForSale', lang: 'fr' }, 'lang'],
     [{ country: 'jo', category: 'CarsForSale', sort_by: 'price_d' }, 'sort_by'],
     [{ country: 'jo', category: 'CarsForSale', sort_order: 'sideways' }, 'sort_order'],
+    [{ country: 'jo', category: 'CarsForSale', title: ['car', 'jeep'] }, 'title'],
+    [{ country: 'jo', category: 'CarsForSale', title: 'x'.repeat(201) }, 'title'],
   ]) {
     assert.equal(validateListingsQuery(query).error.field, field);
   }
@@ -74,6 +77,24 @@ test('builds a Solr select URL with category filters, duplicate and expiry filte
   assert.equal(url.searchParams.get('start'), '20');
   assert.equal(url.searchParams.get('rows'), '10');
   assert.ok(url.searchParams.get('fl').split(',').includes('image_uri_s'));
+  assert.equal(url.searchParams.getAll('fq').length, 3);
+
+  const titleFilterUrl = buildSelectUrl({
+    baseUrl: 'http://solr.test/solr',
+    countryCore: 'country12',
+    category: 'CarsForSale',
+    start: 0,
+    rows: 10,
+    title: 'Toyota (Corolla)',
+  });
+  assert.equal(
+    titleFilterUrl.searchParams.get('fq'),
+    'tag_2_reporting_name_s:CarsForSale',
+  );
+  assert.deepEqual(titleFilterUrl.searchParams.getAll('fq').slice(-1), [
+    'title_t:"Toyota \\(Corolla\\)"',
+  ]);
+  assert.equal(titleFilterUrl.searchParams.getAll('fq').length, 4);
 
   const idSortUrl = buildSelectUrl({
     baseUrl: 'http://solr.test/solr',
@@ -146,6 +167,7 @@ test('calculates page offsets and metadata from Solr numFound', async () => {
     lang: 'ar',
     sortBy: 'post_id',
     sortOrder: 'asc',
+    title: 'Toyota Corolla',
   }, {
     nowSeconds: 1_800_000_000,
     solrSearch: async (options) => {
@@ -158,6 +180,7 @@ test('calculates page offsets and metadata from Solr numFound', async () => {
   assert.equal(searchOptions.rows, 10);
   assert.equal(searchOptions.sortBy, 'post_id');
   assert.equal(searchOptions.sortOrder, 'asc');
+  assert.equal(searchOptions.title, 'Toyota Corolla');
   assert.deepEqual(result, {
     items: [{
       id: 21,
@@ -230,11 +253,12 @@ test('returns 502 for Solr failures and keeps serving requests', async () => {
 
     const laterPage = await requestJson(
       port,
-      '/listings?country=jo&category=CarsForSale&page=4&per_page=5&sort_by=post_id&sort_order=asc',
+      '/listings?country=jo&category=CarsForSale&page=4&per_page=5&sort_by=post_id&sort_order=asc&title=Toyota%20Corolla',
     );
     assert.equal(laterPage.status, 200);
     assert.equal(successfulSolrUrl.searchParams.get('sort'), 'post_id asc');
     assert.equal(successfulSolrUrl.searchParams.get('rows'), '5');
+    assert.ok(successfulSolrUrl.searchParams.getAll('fq').includes('title_t:"Toyota Corolla"'));
     assert.deepEqual(laterPage.body, {
       items: [],
       meta: {

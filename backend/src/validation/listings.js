@@ -66,6 +66,11 @@ function validateListingsQuery(query) {
     return { error: invalidParameter('sort_order', 'sort_order must be asc or desc') };
   }
 
+  const title = query.title === undefined ? '' : query.title;
+  if (typeof title !== 'string' || title.length > 200) {
+    return { error: invalidParameter('title', 'title must be text no longer than 200 characters') };
+  }
+
   return {
     value: {
       country: normalizedCountry,
@@ -76,6 +81,7 @@ function validateListingsQuery(query) {
       lang,
       sortBy,
       sortOrder,
+      title: title.trim(),
     },
   };
 }

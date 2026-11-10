@@ -92,10 +92,10 @@ Replace `12345` with a listing ID available in the configured database. The API 
 The Solr-backed listing endpoint is also available:
 
 ```text
-GET http://localhost:3001/listings?country=jo&category=CarsForSale&page=1&per_page=20&lang=ar&sort_by=record_posted_time_i&sort_order=desc
+GET http://localhost:3001/listings?country=jo&category=CarsForSale&page=1&per_page=20&lang=ar&sort_by=record_posted_time_i&sort_order=desc&title=Toyota
 ```
 
-It supports configurable country cores, category filters, pagination, sorting by post time or listing ID, and Arabic or English city names. Invalid or missing query parameters return `400`; an unavailable or timing-out Solr server returns `502`. See the [backend README](./backend/README.md#solr-listings-endpoint) for parameter rules, Solr configuration, response details, and tests.
+It supports configurable country cores, category and optional title phrase filters, pagination, sorting by post time or listing ID, and Arabic or English city names. Invalid or missing query parameters return `400`; an unavailable or timing-out Solr server returns `502`. See the [backend README](./backend/README.md#solr-listings-endpoint) for parameter rules, Solr configuration, response details, and tests.
 
 ## Production
 
