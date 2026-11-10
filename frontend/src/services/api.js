@@ -35,13 +35,24 @@ export async function fetchListing(id) {
   }
 }
 
-export async function fetchListings({ country, category, page, perPage, lang }) {
+export async function fetchListings({
+  country,
+  category,
+  page,
+  perPage,
+  per_page: perPageParam,
+  lang,
+  sort_by: sortBy = 'record_posted_time_i',
+  sort_order: sortOrder = 'desc',
+}) {
   const params = new URLSearchParams({
     country,
     category,
     page: String(page),
-    per_page: String(perPage),
+    per_page: String(perPage ?? perPageParam),
     lang,
+    sort_by: sortBy,
+    sort_order: sortOrder,
   });
 
   let response;

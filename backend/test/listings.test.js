@@ -26,6 +26,8 @@ test('validates country, category, paging, and language parameters', () => {
     page: 1,
     perPage: 20,
     lang: 'ar',
+    sortBy: 'record_posted_time_i',
+    sortOrder: 'desc',
   });
 
   for (const [query, field] of [
@@ -37,9 +39,17 @@ test('validates country, category, paging, and language parameters', () => {
     [{ country: 'jo', category: 'CarsForSale', page: '0' }, 'page'],
     [{ country: 'jo', category: 'CarsForSale', per_page: '51' }, 'per_page'],
     [{ country: 'jo', category: 'CarsForSale', lang: 'fr' }, 'lang'],
+    [{ country: 'jo', category: 'CarsForSale', sort_by: 'price_d' }, 'sort_by'],
+    [{ country: 'jo', category: 'CarsForSale', sort_order: 'sideways' }, 'sort_order'],
   ]) {
     assert.equal(validateListingsQuery(query).error.field, field);
   }
+
+  assert.equal(validateListingsQuery({
+    country: 'jo',
+    category: 'CarsForSale',
+    per_page: '20',
+  }).value.perPage, 20);
 });
 
 test('builds a Solr select URL with category filters, duplicate and expiry filters, and stable sorting', () => {
@@ -60,9 +70,46 @@ test('builds a Solr select URL with category filters, duplicate and expiry filte
     'duplicate_i:0',
     'record_expiration_time_i:[1800000000 TO *]',
   ]);
-  assert.equal(url.searchParams.get('sort'), 'record_posted_time_i desc,post_id asc');
+  assert.equal(url.searchParams.get('sort'), 'record_posted_time_i desc,post_id desc');
   assert.equal(url.searchParams.get('start'), '20');
   assert.equal(url.searchParams.get('rows'), '10');
+  assert.ok(url.searchParams.get('fl').split(',').includes('image_uri_s'));
+
+  const idSortUrl = buildSelectUrl({
+    baseUrl: 'http://solr.test/solr',
+    countryCore: 'country12',
+    category: 'CarsForSale',
+    start: 0,
+    rows: 10,
+    sortBy: 'post_id',
+    sortOrder: 'asc',
+  });
+  assert.equal(idSortUrl.searchParams.get('sort'), 'post_id asc');
+
+  const dateAscendingUrl = buildSelectUrl({
+    baseUrl: 'http://solr.test/solr',
+    countryCore: 'country12',
+    category: 'CarsForSale',
+    start: 0,
+    rows: 10,
+    sortBy: 'record_posted_time_i',
+    sortOrder: 'asc',
+  });
+  assert.equal(
+    dateAscendingUrl.searchParams.get('sort'),
+    'record_posted_time_i asc,post_id asc',
+  );
+
+  const idDescendingUrl = buildSelectUrl({
+    baseUrl: 'http://solr.test/solr',
+    countryCore: 'country12',
+    category: 'CarsForSale',
+    start: 0,
+    rows: 10,
+    sortBy: 'post_id',
+    sortOrder: 'desc',
+  });
+  assert.equal(idDescendingUrl.searchParams.get('sort'), 'post_id desc');
 });
 
 test('maps Solr documents and selects the requested city language', () => {
@@ -73,8 +120,7 @@ test('maps Solr documents and selects the requested city language', () => {
     price_currency_code_s: 'JOD',
     city_name_s: 'عمّان',
     city_name_en_s: 'Amman',
-    image_path_s: 'https://images.test/',
-    post_image_s: 'car.jpg',
+    image_uri_s: 'cars/car 1',
     image_count_i: 4,
   };
 
@@ -84,10 +130,10 @@ test('maps Solr documents and selects the requested city language', () => {
     price: 12000.5,
     currency: 'JOD',
     city: 'Amman',
-    image: 'https://images.test/car.jpg',
+    image: 'https://arbokv2-images.sooqdev1.com/previews/640x480/cars/car%201.webp',
     image_count: 4,
   });
-  assert.equal(mapSolrDocument({ post_image_s: null }, 'ar').image, '');
+  assert.equal(mapSolrDocument({ image_uri_s: null }, 'ar').image, '');
 });
 
 test('calculates page offsets and metadata from Solr numFound', async () => {
@@ -98,6 +144,8 @@ test('calculates page offsets and metadata from Solr numFound', async () => {
     page: 3,
     perPage: 10,
     lang: 'ar',
+    sortBy: 'post_id',
+    sortOrder: 'asc',
   }, {
     nowSeconds: 1_800_000_000,
     solrSearch: async (options) => {
@@ -108,6 +156,8 @@ test('calculates page offsets and metadata from Solr numFound', async () => {
 
   assert.equal(searchOptions.start, 20);
   assert.equal(searchOptions.rows, 10);
+  assert.equal(searchOptions.sortBy, 'post_id');
+  assert.equal(searchOptions.sortOrder, 'asc');
   assert.deepEqual(result, {
     items: [{
       id: 21,
@@ -169,16 +219,22 @@ test('returns 502 for Solr failures and keeps serving requests', async () => {
     assert.equal(failedRequest.status, 502);
     assert.deepEqual(failedRequest.body, { error: { message: 'Solr is unavailable' } });
 
-    global.fetch = async () => ({
-      ok: true,
-      json: async () => ({ response: { numFound: 12, docs: [] } }),
-    });
+    let successfulSolrUrl;
+    global.fetch = async (url) => {
+      successfulSolrUrl = new URL(url);
+      return {
+        ok: true,
+        json: async () => ({ response: { numFound: 12, docs: [] } }),
+      };
+    };
 
     const laterPage = await requestJson(
       port,
-      '/listings?country=jo&category=CarsForSale&page=4&per_page=5',
+      '/listings?country=jo&category=CarsForSale&page=4&per_page=5&sort_by=post_id&sort_order=asc',
     );
     assert.equal(laterPage.status, 200);
+    assert.equal(successfulSolrUrl.searchParams.get('sort'), 'post_id asc');
+    assert.equal(successfulSolrUrl.searchParams.get('rows'), '5');
     assert.deepEqual(laterPage.body, {
       items: [],
       meta: {

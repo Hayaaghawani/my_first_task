@@ -58,9 +58,9 @@ The Solr endpoint is `GET /listings`:
 GET http://localhost:3001/listings?country=jo&category=CarsForSale&page=1&per_page=20&lang=ar
 ```
 
-`country` and `category` are required. The country code maps to a Solr core in [`src/config/countries.js`](./src/config/countries.js); currently `jo` maps to `country12`. `category` accepts letters, numbers, underscores, and hyphens. `page` defaults to `1`, `per_page` defaults to `20` and must be between `1` and `50`, and `lang` defaults to `ar` (`ar` or `en` are supported).
+`country` and `category` are required. The country code maps to a Solr core in [`src/config/countries.js`](./src/config/countries.js); currently `jo` maps to `country12`. `category` accepts letters, numbers, underscores, and hyphens. `page` defaults to `1`, `per_page` defaults to `20` and must be between `1` and `50`, and `lang` defaults to `ar` (`ar` or `en` are supported). `sort_by` accepts `record_posted_time_i` (the default) or `post_id`; `sort_order` accepts `asc` or `desc` (the default is `desc`). Sorting by posting time uses `post_id` as a unique tie-breaker in the same direction, so the selected direction also affects listings with matching timestamps.
 
-The request selects the country core and filters by the requested `tag_2_reporting_name_s`, `duplicate_i:0`, and `record_expiration_time_i` greater than or equal to the current Unix time. Results sort newest-first by `record_posted_time_i`, with `post_id` as a stable tie-breaker. The API's `meta.total` is Solr's `response.numFound` for the same filtered request. A page beyond `total_pages` returns HTTP 200 with an empty `items` array.
+The request selects the country core and filters by the requested `tag_2_reporting_name_s`, `duplicate_i:0`, and `record_expiration_time_i` greater than or equal to the current Unix time. Results sort by the requested field and direction. When sorting by posting time, `post_id` is a unique tie-breaker in the same direction. The API's `meta.total` is Solr's `response.numFound` for the same filtered request. A page beyond `total_pages` returns HTTP 200 with an empty `items` array.
 
 The response maps `post_id`, title, price/currency, the city name selected by `lang`, image URL, and image count. Solr connection errors, timeouts, unsuccessful HTTP responses, or invalid Solr responses return `502` without terminating the Node.js process.
 

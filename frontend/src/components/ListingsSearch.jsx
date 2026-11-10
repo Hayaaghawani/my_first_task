@@ -1,14 +1,37 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fetchListings } from '../services/api.js';
 import ErrorMessage from './ErrorMessage.jsx';
 import Loading from './Loading.jsx';
 
-const INITIAL_QUERY = {
+const DEFAULT_QUERY = {
   country: 'jo',
   category: 'CarsForSale',
-  perPage: '20',
+  page: '1',
+  per_page: '20',
   lang: 'ar',
+  sort_by: 'record_posted_time_i',
+  sort_order: 'desc',
 };
+
+function readQueryFromUrl() {
+  const search = new URLSearchParams(window.location.search);
+  const query = Object.fromEntries(
+    Object.keys(DEFAULT_QUERY).map((key) => [key, search.get(key) ?? DEFAULT_QUERY[key]]),
+  );
+  const canonicalQuery = new URLSearchParams(query);
+  const canonicalUrl = `/listings?${canonicalQuery}`;
+
+  if (`${window.location.pathname}${window.location.search}` !== canonicalUrl) {
+    window.history.replaceState(null, '', canonicalUrl);
+  }
+
+  return query;
+}
+
+function buildPageUrl(query, page) {
+  const params = new URLSearchParams({ ...query, page: String(page) });
+  return `/listings?${params}`;
+}
 
 function formatPrice(price, currency) {
   if (price === null || price === undefined || price === '') {
@@ -18,82 +41,97 @@ function formatPrice(price, currency) {
   return [Number(price).toLocaleString(), currency].filter(Boolean).join(' ');
 }
 
+function submitSearch(event, language) {
+  event.preventDefault();
+  const params = new URLSearchParams(new FormData(event.currentTarget));
+  params.set('country', 'jo');
+  params.set('lang', language);
+  params.set('page', '1');
+  window.location.assign(`/listings?${params}`);
+}
+
 export default function ListingsSearch() {
-  const [query, setQuery] = useState(INITIAL_QUERY);
+  const [query] = useState(readQueryFromUrl);
   const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  async function loadPage(page, event) {
-    event?.preventDefault();
-    setLoading(true);
-    setError('');
-    setResult(null);
+  useEffect(() => {
+    let active = true;
 
-    try {
-      const response = await fetchListings({
-        ...query,
-        page,
-        perPage: Number(query.perPage),
+    fetchListings(query)
+      .then((response) => {
+        if (active) {
+          setResult(response);
+        }
+      })
+      .catch((requestError) => {
+        if (active) {
+          setError(requestError.message || 'Could not load listings');
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
       });
-      setResult(response);
-    } catch (requestError) {
-      setError(requestError.message || 'Could not load listings');
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  function updateQuery(event) {
-    const { name, value } = event.target;
-    setQuery((current) => ({ ...current, [name]: value }));
-  }
+    return () => {
+      active = false;
+    };
+  }, [query]);
 
   const meta = result?.meta;
 
   return (
     <>
-      <form className="search-panel browse-form" onSubmit={(event) => loadPage(1, event)}>
+      <form
+        className="search-panel browse-form"
+        onSubmit={(event) => submitSearch(event, query.lang)}
+      >
         <div className="browse-fields">
           <label>
             Country code
             <input
               name="country"
-              value={query.country}
-              onChange={updateQuery}
-              required
-              autoComplete="off"
+              defaultValue={query.country}
+              readOnly
+              aria-readonly="true"
             />
           </label>
           <label>
             Category
             <input
               name="category"
-              value={query.category}
-              onChange={updateQuery}
+              defaultValue={query.category}
               required
               autoComplete="off"
             />
           </label>
           <label>
             Per page
-            <select name="perPage" value={query.perPage} onChange={updateQuery}>
+            <select name="per_page" defaultValue={query.per_page}>
               {[10, 20, 30, 50].map((size) => (
                 <option key={size} value={size}>{size}</option>
               ))}
             </select>
           </label>
           <label>
-            City language
-            <select name="lang" value={query.lang} onChange={updateQuery}>
-              <option value="ar">Arabic</option>
-              <option value="en">English</option>
+            Sort by
+            <select name="sort_by" defaultValue={query.sort_by}>
+              <option value="record_posted_time_i">Date posted</option>
+              <option value="post_id">Listing ID</option>
+            </select>
+          </label>
+          <label>
+            Sort direction
+            <select name="sort_order" defaultValue={query.sort_order}>
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
             </select>
           </label>
         </div>
-        <button type="submit" disabled={loading}>
-          {loading ? 'Searching…' : 'Search listings'}
-        </button>
+        <button type="submit">Search listings</button>
       </form>
 
       <div className="result-area" aria-live="polite">
@@ -106,6 +144,11 @@ export default function ListingsSearch() {
                 {meta.total.toLocaleString()} listings
                 <span> · </span>
                 Page {meta.page} of {meta.total_pages}
+              </p>
+              <p>
+                Sorted by {query.sort_by === 'post_id' ? 'listing ID' : 'date posted'}
+                {' · '}
+                {query.sort_order === 'asc' ? 'ascending' : 'descending'}
               </p>
             </div>
             {result.items.length === 0 ? (
@@ -137,23 +180,31 @@ export default function ListingsSearch() {
               </div>
             )}
             <nav className="pagination" aria-label="Listing pages">
-              <button
-                type="button"
-                className="pagination-button"
-                disabled={loading || meta.page <= 1}
-                onClick={() => loadPage(meta.page - 1)}
-              >
-                Previous
-              </button>
+              {meta.page > 1 ? (
+                <a
+                  className="pagination-button"
+                  href={buildPageUrl(query, meta.page - 1)}
+                >
+                  Previous
+                </a>
+              ) : (
+                <span className="pagination-button is-disabled" aria-disabled="true">
+                  Previous
+                </span>
+              )}
               <span>Page {meta.page}</span>
-              <button
-                type="button"
-                className="pagination-button"
-                disabled={loading || !meta.has_next}
-                onClick={() => loadPage(meta.page + 1)}
-              >
-                Next
-              </button>
+              {meta.has_next ? (
+                <a
+                  className="pagination-button"
+                  href={buildPageUrl(query, meta.page + 1)}
+                >
+                  Next
+                </a>
+              ) : (
+                <span className="pagination-button is-disabled" aria-disabled="true">
+                  Next
+                </span>
+              )}
             </nav>
           </>
         )}

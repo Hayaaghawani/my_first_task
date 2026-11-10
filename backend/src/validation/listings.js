@@ -56,6 +56,16 @@ function validateListingsQuery(query) {
     return { error: invalidParameter('lang', 'lang must be ar or en') };
   }
 
+  const sortBy = query.sort_by === undefined ? 'record_posted_time_i' : query.sort_by;
+  if (!['record_posted_time_i', 'post_id'].includes(sortBy)) {
+    return { error: invalidParameter('sort_by', 'sort_by must be record_posted_time_i or post_id') };
+  }
+
+  const sortOrder = query.sort_order === undefined ? 'desc' : query.sort_order;
+  if (!['asc', 'desc'].includes(sortOrder)) {
+    return { error: invalidParameter('sort_order', 'sort_order must be asc or desc') };
+  }
+
   return {
     value: {
       country: normalizedCountry,
@@ -64,6 +74,8 @@ function validateListingsQuery(query) {
       page: page.value,
       perPage: perPage.value,
       lang,
+      sortBy,
+      sortOrder,
     },
   };
 }

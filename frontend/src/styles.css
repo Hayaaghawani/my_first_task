@@ -64,7 +64,30 @@ input:focus-visible {
 }
 
 .page-header {
+  position: relative;
   margin-bottom: 28px;
+}
+
+.language-switcher {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.language-switcher select {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: #17212b;
+  background: #fff;
+  font: inherit;
 }
 
 .eyebrow {
@@ -100,34 +123,24 @@ h1 {
   line-height: 1.6;
 }
 
-.view-tabs {
+.page-nav {
   display: flex;
-  gap: 8px;
+  gap: 18px;
   margin-bottom: 16px;
-  padding: 5px;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: #edf1f3;
 }
 
-.view-tab {
-  min-height: 40px;
-  flex: 1;
-  padding: 0 14px;
-  color: #465560;
-  background: transparent;
+.page-nav a {
+  padding: 8px 0;
+  border-bottom: 2px solid transparent;
+  color: var(--color-muted);
+  font-weight: 700;
+  text-decoration: none;
 }
 
-.view-tab:hover:not(:disabled) {
+.page-nav a:hover,
+.page-nav a[aria-current="page"] {
   color: var(--color-brand-dark);
-  background: #fff;
-}
-
-.view-tab.is-active,
-.view-tab.is-active:hover {
-  color: var(--color-brand-dark);
-  background: #fff;
-  box-shadow: 0 1px 4px rgb(23 33 43 / 12%);
+  border-bottom-color: var(--color-brand);
 }
 
 .search-panel,
@@ -348,6 +361,12 @@ td {
   background: #fff;
 }
 
+.browse-fields input[readonly] {
+  color: var(--color-muted);
+  background: #f0f3f5;
+  cursor: default;
+}
+
 .browse-summary {
   display: flex;
   justify-content: space-between;
@@ -425,14 +444,27 @@ td {
 }
 
 .pagination-button {
+  display: inline-flex;
   min-height: 40px;
+  align-items: center;
+  justify-content: center;
   padding: 0 16px;
+  border-radius: 9px;
+  color: #fff;
+  background: var(--color-brand);
+  font-weight: 700;
+  text-decoration: none;
 }
 
-.pagination-button:disabled {
+.pagination-button:hover:not(.is-disabled) {
+  color: #fff;
+  background: var(--color-brand-dark);
+}
+
+.pagination-button.is-disabled {
   color: #7d8991;
   background: #e4e9ec;
-  cursor: not-allowed;
+  cursor: default;
 }
 
 @media (max-width: 540px) {

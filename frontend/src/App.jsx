@@ -1,90 +1,56 @@
-import { useState } from 'react';
-import { fetchListing } from './services/api.js';
-import CustomParams from './components/CustomParams.jsx';
-import ErrorMessage from './components/ErrorMessage.jsx';
-import ListingCard from './components/ListingCard.jsx';
-import Loading from './components/Loading.jsx';
-import SearchBar from './components/SearchBar.jsx';
 import ListingsSearch from './components/ListingsSearch.jsx';
+import SearchListingPage from './components/SearchListingPage.jsx';
 
 export default function App() {
-  const [activeView, setActiveView] = useState('lookup');
-  const [listingId, setListingId] = useState('');
-  const [listing, setListing] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const isListingsPage = window.location.pathname.replace(/\/+$/, '') === '/listings';
+  const searchParams = new URLSearchParams(window.location.search);
+  const language = searchParams.get('lang') === 'en' ? 'en' : 'ar';
 
-  async function handleSearch(event) {
-    event.preventDefault();
-    setLoading(true);
-    setError('');
-    setListing(null);
-
-    try {
-      const result = await fetchListing(listingId);
-      setListing(result);
-    } catch (requestError) {
-      setError(requestError.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
-    }
+  function changeLanguage(event) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('lang', event.target.value);
+    if (!params.has('country')) params.set('country', 'jo');
+    if (!params.has('category')) params.set('category', 'CarsForSale');
+    window.location.assign(`/listings?${params}`);
   }
 
   return (
     <main className="page-shell">
       <header className="page-header">
+        {isListingsPage && (
+          <label className="language-switcher">
+            <span>Language</span>
+            <select value={language} onChange={changeLanguage} aria-label="City language">
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+        )}
         <p className="eyebrow">OpenSooq</p>
-        <h1>{activeView === 'lookup' ? 'Listing lookup' : 'Browse listings'}</h1>
+        <h1>{isListingsPage ? 'Browse listings' : 'Find a listing'}</h1>
         <p className="page-intro">
-          {activeView === 'lookup'
-            ? 'Enter a listing ID to view its details and custom attributes.'
-            : 'Search Solr listings by country and category, then browse the results.'}
+          {isListingsPage
+            ? 'Search and browse listings by country and category.'
+            : 'Look up a listing by its ID to view its details and custom attributes.'}
         </p>
       </header>
 
-      <nav className="view-tabs" aria-label="Listing tools">
-        <button
-          type="button"
-          className={`view-tab${activeView === 'lookup' ? ' is-active' : ''}`}
-          aria-pressed={activeView === 'lookup'}
-          onClick={() => setActiveView('lookup')}
+      <nav className="page-nav" aria-label="Listing pages">
+        <a
+          href="/search-listing"
+          aria-current={isListingsPage ? undefined : 'page'}
         >
           Find by ID
-        </button>
-        <button
-          type="button"
-          className={`view-tab${activeView === 'browse' ? ' is-active' : ''}`}
-          aria-pressed={activeView === 'browse'}
-          onClick={() => setActiveView('browse')}
+        </a>
+        <a
+          href="/listings"
+          aria-current={isListingsPage ? 'page' : undefined}
         >
           Browse listings
-        </button>
+        </a>
       </nav>
 
-      {activeView === 'lookup' ? (
-        <>
-          <section className="search-panel" aria-label="Search listings by ID">
-            <SearchBar
-              value={listingId}
-              onChange={setListingId}
-              onSubmit={handleSearch}
-              disabled={loading}
-            />
-          </section>
-
-          <div className="result-area" aria-live="polite">
-            {loading && <Loading />}
-            {!loading && error && <ErrorMessage message={error} />}
-            {!loading && listing && (
-              <ListingCard listing={listing}>
-                <CustomParams params={listing.custom_params} />
-              </ListingCard>
-            )}
-          </div>
-        </>
-      ) : (
-        <ListingsSearch />
-      )}
+      {isListingsPage ? <ListingsSearch /> : <SearchListingPage />}
     </main>
   );
 }

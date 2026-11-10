@@ -7,8 +7,7 @@ const SELECTED_FIELDS = [
   'price_currency_code_s',
   'city_name_s',
   'city_name_en_s',
-  'image_path_s',
-  'post_image_s',
+  'image_uri_s',
   'image_count_i',
 ];
 
@@ -27,6 +26,8 @@ function buildSelectUrl({
   rows,
   nowSeconds = Math.floor(Date.now() / 1000),
   lang,
+  sortBy = 'record_posted_time_i',
+  sortOrder = 'desc',
 }) {
   const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   const url = new URL(`${countryCore}/select`, normalizedBaseUrl);
@@ -34,7 +35,10 @@ function buildSelectUrl({
   url.searchParams.append('fq', `tag_2_reporting_name_s:${category}`);
   url.searchParams.append('fq', 'duplicate_i:0');
   url.searchParams.append('fq', `record_expiration_time_i:[${nowSeconds} TO *]`);
-  url.searchParams.set('sort', 'record_posted_time_i desc,post_id asc');
+  const sort = sortBy === 'post_id'
+    ? `post_id ${sortOrder}`
+    : `record_posted_time_i ${sortOrder},post_id ${sortOrder}`;
+  url.searchParams.set('sort', sort);
   url.searchParams.set('start', String(start));
   url.searchParams.set('rows', String(rows));
   url.searchParams.set('fl', SELECTED_FIELDS.join(','));

@@ -1,5 +1,7 @@
 const { searchListings } = require('../solr');
 
+const IMAGE_PREVIEW_BASE_URL = 'https://arbokv2-images.sooqdev1.com/previews/640x480';
+
 function getPagingMeta(page, perPage, total) {
   const totalPages = Math.ceil(total / perPage);
   return {
@@ -16,15 +18,21 @@ function firstValue(value) {
 }
 
 function mapSolrDocument(doc, lang = 'ar') {
-  const postImage = firstValue(doc.post_image_s);
-  const imagePath = firstValue(doc.image_path_s);
+  const imageUri = firstValue(doc.image_uri_s);
+  const imagePath = imageUri
+    ? String(imageUri)
+      .split('/')
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join('/')
+    : '';
   return {
     id: firstValue(doc.post_id),
     title: firstValue(doc.title_t) ?? '',
     price: firstValue(doc.price_d) ?? null,
     currency: firstValue(doc.price_currency_code_s) ?? '',
     city: firstValue(lang === 'en' ? doc.city_name_en_s : doc.city_name_s) ?? '',
-    image: postImage ? `${imagePath ?? ''}${postImage}` : '',
+    image: imagePath ? `${IMAGE_PREVIEW_BASE_URL}/${imagePath}.webp` : '',
     image_count: firstValue(doc.image_count_i) ?? 0,
   };
 }
@@ -36,6 +44,8 @@ async function getListings(query, { solrSearch = searchListings, nowSeconds } = 
     start: (query.page - 1) * query.perPage,
     rows: query.perPage,
     lang: query.lang,
+    sortBy: query.sortBy,
+    sortOrder: query.sortOrder,
     nowSeconds,
   });
 
