@@ -12,6 +12,10 @@ const DEFAULT_QUERY = {
   sort_by: 'record_posted_time_i',
   sort_order: 'desc',
   title: '',
+  has_images: 'false',
+  has_reels: 'false',
+  has_videos: 'false',
+  premium: 'false',
 };
 
 function readQueryFromUrl() {
@@ -54,6 +58,9 @@ function submitSearch(event, language) {
   params.set('country', 'jo');
   params.set('lang', language);
   params.set('page', '1');
+  for (const field of ['has_images', 'has_reels', 'has_videos', 'premium']) {
+    params.set(field, event.currentTarget.elements.namedItem(field).checked ? 'true' : 'false');
+  }
   window.location.assign(`/listings?${params}`);
 }
 
@@ -148,6 +155,38 @@ export default function ListingsSearch() {
               <option value="asc">Ascending</option>
             </select>
           </label>
+          <label className="filter-toggle">
+            <input
+              type="checkbox"
+              name="has_images"
+              defaultChecked={query.has_images === 'true' || query.has_images === '1'}
+            />
+            <span>Listings with images</span>
+          </label>
+          <label className="filter-toggle">
+            <input
+              type="checkbox"
+              name="has_reels"
+              defaultChecked={query.has_reels === 'true' || query.has_reels === '1'}
+            />
+            <span>Listings with recent reels</span>
+          </label>
+          <label className="filter-toggle">
+            <input
+              type="checkbox"
+              name="has_videos"
+              defaultChecked={query.has_videos === 'true' || query.has_videos === '1'}
+            />
+            <span>Listings with recent videos</span>
+          </label>
+          <label className="filter-toggle">
+            <input
+              type="checkbox"
+              name="premium"
+              defaultChecked={query.premium === 'true' || query.premium === '1'}
+            />
+            <span>Premium listings only</span>
+          </label>
         </div>
         <button type="submit">Search listings</button>
       </form>
@@ -168,6 +207,18 @@ export default function ListingsSearch() {
                 {' · '}
                 {query.sort_order === 'asc' ? 'ascending' : 'descending'}
               </p>
+              {(query.has_images === 'true'
+                || query.has_reels === 'true'
+                || query.has_videos === 'true'
+                || query.premium === 'true') && (
+                <p>
+                  Active filters:
+                  {query.has_images === 'true' && ' images'}
+                  {query.has_reels === 'true' && ' reels'}
+                  {query.has_videos === 'true' && ' videos'}
+                  {query.premium === 'true' && ' premium'}
+                </p>
+              )}
             </div>
             {result.items.length === 0 ? (
               <p className="empty-results">No listings found on this page.</p>

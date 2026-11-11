@@ -45,6 +45,10 @@ export async function fetchListings({
   sort_by: sortBy = 'record_posted_time_i',
   sort_order: sortOrder = 'desc',
   title = '',
+  has_images: hasImages = 'false',
+  has_reels: hasReels = 'false',
+  has_videos: hasVideos = 'false',
+  premium = 'false',
 }) {
   const params = new URLSearchParams({
     country,
@@ -54,6 +58,10 @@ export async function fetchListings({
     lang,
     sort_by: sortBy,
     sort_order: sortOrder,
+    has_images: String(hasImages),
+    has_reels: String(hasReels),
+    has_videos: String(hasVideos),
+    premium: String(premium),
   });
   if (title.trim()) {
     params.set('title', title.trim());

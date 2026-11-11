@@ -29,6 +29,10 @@ test('validates country, category, paging, and language parameters', () => {
     sortBy: 'record_posted_time_i',
     sortOrder: 'desc',
     title: '',
+    hasImages: false,
+    hasReels: false,
+    hasVideos: false,
+    premium: false,
   });
 
   for (const [query, field] of [
@@ -44,6 +48,8 @@ test('validates country, category, paging, and language parameters', () => {
     [{ country: 'jo', category: 'CarsForSale', sort_order: 'sideways' }, 'sort_order'],
     [{ country: 'jo', category: 'CarsForSale', title: ['car', 'jeep'] }, 'title'],
     [{ country: 'jo', category: 'CarsForSale', title: 'x'.repeat(201) }, 'title'],
+    [{ country: 'jo', category: 'CarsForSale', has_images: 'on' }, 'has_images'],
+    [{ country: 'jo', category: 'CarsForSale', has_reels: 'yes' }, 'has_reels'],
   ]) {
     assert.equal(validateListingsQuery(query).error.field, field);
   }
@@ -78,6 +84,30 @@ test('builds a Solr select URL with category filters, duplicate and expiry filte
   assert.equal(url.searchParams.get('rows'), '10');
   assert.ok(url.searchParams.get('fl').split(',').includes('image_uri_s'));
   assert.equal(url.searchParams.getAll('fq').length, 3);
+
+  const toggleUrl = buildSelectUrl({
+    baseUrl: 'http://solr.test/solr',
+    countryCore: 'country12',
+    category: 'CarsForSale',
+    start: 0,
+    rows: 20,
+    nowSeconds: 1_800_000_000,
+    hasImages: true,
+    hasReels: true,
+    hasVideos: true,
+    premium: true,
+  });
+  assert.deepEqual(toggleUrl.searchParams.getAll('fq'), [
+    'tag_2_reporting_name_s:CarsForSale',
+    'duplicate_i:0',
+    'record_expiration_time_i:[1800000000 TO *]',
+    'image_count_i:[1 TO *]',
+    'with_reels_i:1',
+    'newest_reel_date_i:[1799913600 TO 1800000000]',
+    'with_video_i:1',
+    'newest_video_date_i:[1799913600 TO 1800000000]',
+    'status_i:301',
+  ]);
 
   const titleFilterUrl = buildSelectUrl({
     baseUrl: 'http://solr.test/solr',
@@ -168,6 +198,10 @@ test('calculates page offsets and metadata from Solr numFound', async () => {
     sortBy: 'post_id',
     sortOrder: 'asc',
     title: 'Toyota Corolla',
+    hasImages: true,
+    hasReels: true,
+    hasVideos: false,
+    premium: true,
   }, {
     nowSeconds: 1_800_000_000,
     solrSearch: async (options) => {
@@ -181,6 +215,10 @@ test('calculates page offsets and metadata from Solr numFound', async () => {
   assert.equal(searchOptions.sortBy, 'post_id');
   assert.equal(searchOptions.sortOrder, 'asc');
   assert.equal(searchOptions.title, 'Toyota Corolla');
+  assert.equal(searchOptions.hasImages, true);
+  assert.equal(searchOptions.hasReels, true);
+  assert.equal(searchOptions.hasVideos, false);
+  assert.equal(searchOptions.premium, true);
   assert.deepEqual(result, {
     items: [{
       id: 21,
@@ -253,12 +291,16 @@ test('returns 502 for Solr failures and keeps serving requests', async () => {
 
     const laterPage = await requestJson(
       port,
-      '/listings?country=jo&category=CarsForSale&page=4&per_page=5&sort_by=post_id&sort_order=asc&title=Toyota%20Corolla',
+      '/listings?country=jo&category=CarsForSale&page=4&per_page=5&sort_by=post_id&sort_order=asc&title=Toyota%20Corolla&has_images=true&has_reels=true&has_videos=false&premium=true',
     );
     assert.equal(laterPage.status, 200);
     assert.equal(successfulSolrUrl.searchParams.get('sort'), 'post_id asc');
     assert.equal(successfulSolrUrl.searchParams.get('rows'), '5');
     assert.ok(successfulSolrUrl.searchParams.getAll('fq').includes('title_t:"Toyota Corolla"'));
+    assert.ok(successfulSolrUrl.searchParams.getAll('fq').includes('image_count_i:[1 TO *]'));
+    assert.ok(successfulSolrUrl.searchParams.getAll('fq').includes('with_reels_i:1'));
+    assert.ok(successfulSolrUrl.searchParams.getAll('fq').includes('status_i:301'));
+    assert.ok(!successfulSolrUrl.searchParams.getAll('fq').includes('with_video_i:1'));
     assert.deepEqual(laterPage.body, {
       items: [],
       meta: {

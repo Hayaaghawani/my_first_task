@@ -53,17 +53,9 @@ function buildSelectUrl({
   }
   if (hasReels) {
     url.searchParams.append('fq', 'with_reels_i:1');
-    url.searchParams.append(
-      'fq',
-      `newest_reel_date_i:[${currentTimeSeconds - 86400} TO ${currentTimeSeconds}]`,
-    );
   }
   if (hasVideos) {
     url.searchParams.append('fq', 'with_video_i:1');
-    url.searchParams.append(
-      'fq',
-      `newest_video_date_i:[${currentTimeSeconds - 86400} TO ${currentTimeSeconds}]`,
-    );
   }
   if (premium) {
     url.searchParams.append('fq', 'status_i:301');

@@ -367,6 +367,30 @@ td {
   cursor: default;
 }
 
+.browse-fields .filter-toggle {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.filter-toggle input {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--color-brand);
+}
+
+.filter-toggle span {
+  font-weight: 600;
+}
+
 .browse-summary {
   display: flex;
   justify-content: space-between;
