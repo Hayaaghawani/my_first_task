@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchListings } from '../services/api.js';
+import { FILTER_LABELS } from '../config/filterLabels.js';
 import ErrorMessage from './ErrorMessage.jsx';
 import Loading from './Loading.jsx';
 
@@ -85,6 +86,8 @@ export default function ListingsSearch() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const language = query.lang === 'en' ? 'en' : 'ar';
+  const label = (name) => FILTER_LABELS[name][language];
 
   useEffect(() => {
     let active = true;
@@ -150,7 +153,7 @@ export default function ListingsSearch() {
             />
           </label>
           <label>
-            City IDs
+            {label('city')}
             <input
               name="city"
               type="text"
@@ -164,56 +167,72 @@ export default function ListingsSearch() {
               Enter one or more city IDs, separated by commas.
             </span>
           </label>
-          <label>
-            Year from
-            <input
-              name="year_from"
-              type="number"
-              min="1900"
-              max="2100"
-              step="1"
-              defaultValue={query.year_from}
-              placeholder="e.g. 2018"
-            />
-          </label>
-          <label>
-            Year to
-            <input
-              name="year_to"
-              type="number"
-              min="1900"
-              max="2100"
-              step="1"
-              defaultValue={query.year_to}
-              placeholder="e.g. 2024"
-            />
-          </label>
-          <label>
-            Minimum price
-            <input
-              name="price_from"
-              type="number"
-              min="1"
-              step="1"
-              defaultValue={query.price_from}
-              placeholder="No minimum"
-              aria-describedby="price-filter-hint"
-            />
+          <fieldset className="range-filter">
+            <legend>{label('year')}</legend>
+            <div className="range-filter-fields">
+              <label>
+                <span>{label('from')}</span>
+                <input
+                  name="year_from"
+                  type="number"
+                  min="1900"
+                  max="2100"
+                  step="1"
+                  defaultValue={query.year_from}
+                  placeholder="1900"
+                  aria-label={`${label('year')} ${label('from')}`}
+                />
+              </label>
+              <label>
+                <span>{label('to')}</span>
+                <input
+                  name="year_to"
+                  type="number"
+                  min="1900"
+                  max="2100"
+                  step="1"
+                  defaultValue={query.year_to}
+                  placeholder="2100"
+                  aria-label={`${label('year')} ${label('to')}`}
+                />
+              </label>
+            </div>
+          </fieldset>
+          <fieldset className="range-filter">
+            <legend>{label('price')}</legend>
+            <div className="range-filter-fields">
+              <label>
+                <span>{label('from')}</span>
+                <input
+                  name="price_from"
+                  type="number"
+                  min="1"
+                  step="1"
+                  defaultValue={query.price_from}
+                  placeholder="—"
+                  aria-label={`${label('price')} ${label('from')}`}
+                  aria-describedby="price-filter-hint"
+                />
+              </label>
+              <label>
+                <span>{label('to')}</span>
+                <input
+                  name="price_to"
+                  type="number"
+                  min="1"
+                  step="1"
+                  defaultValue={query.price_to}
+                  placeholder="—"
+                  aria-label={`${label('price')} ${label('to')}`}
+                />
+              </label>
+            </div>
             <span className="field-hint" id="price-filter-hint">
-              Uses the price currency in the Solr index.
+              {language === 'ar'
+                ? 'تُستخدم عملة السعر الموجودة في فهرس Solr.'
+                : 'Uses the price currency in the Solr index.'}
             </span>
-          </label>
-          <label>
-            Maximum price
-            <input
-              name="price_to"
-              type="number"
-              min="1"
-              step="1"
-              defaultValue={query.price_to}
-              placeholder="No maximum"
-            />
-          </label>
+          </fieldset>
           <label>
             Per page
             <select name="per_page" defaultValue={query.per_page}>
@@ -242,7 +261,7 @@ export default function ListingsSearch() {
               name="has_images"
               defaultChecked={query.has_images === 'true' || query.has_images === '1'}
             />
-            <span>Listings with images</span>
+            <span>{label('hasImages')}</span>
           </label>
           <label className="filter-toggle">
             <input
@@ -250,7 +269,7 @@ export default function ListingsSearch() {
               name="has_reels"
               defaultChecked={query.has_reels === 'true' || query.has_reels === '1'}
             />
-            <span>Listings with recent reels</span>
+            <span>{label('hasReels')}</span>
           </label>
           <label className="filter-toggle">
             <input
@@ -258,7 +277,7 @@ export default function ListingsSearch() {
               name="has_videos"
               defaultChecked={query.has_videos === 'true' || query.has_videos === '1'}
             />
-            <span>Listings with recent videos</span>
+            <span>{label('hasVideos')}</span>
           </label>
           <label className="filter-toggle">
             <input
@@ -266,7 +285,7 @@ export default function ListingsSearch() {
               name="premium"
               defaultChecked={query.premium === 'true' || query.premium === '1'}
             />
-            <span>Premium listings only</span>
+            <span>{label('premium')}</span>
           </label>
         </div>
         <button type="submit">Search listings</button>

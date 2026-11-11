@@ -81,7 +81,10 @@ if (priceFrom !== undefined || priceTo !== undefined) {
 }
 
 if (cityIds.length > 0) {
-  url.searchParams.append('fq', `city_id:(${cityIds.join(' OR ')})`);
+  url.searchParams.append(
+    'fq',
+    `{!tag=CITY}city_id:(${cityIds.join(' OR ')})`,
+  );
 }
   const sort = sortBy === 'post_id'
     ? `post_id ${sortOrder}`
