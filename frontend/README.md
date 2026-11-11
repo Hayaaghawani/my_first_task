@@ -27,7 +27,9 @@ npm run dev
 Open the URL Vite prints (usually `http://localhost:5173`). The app has separate pages:
 
 - `/search-listing?id=289115914` looks up one listing through MySQL. The `id` parameter is optional until you search.
-- `/listings?country=jo&category=CarsForSale&page=1&per_page=20&lang=ar&sort_by=record_posted_time_i&sort_order=desc&title=Toyota&has_images=true&has_reels=false&has_videos=false&premium=false` browses Solr listings. Search filters (including the optional title phrase and image/reel/video/premium toggles), language, sorting, and pagination live in the URL, so refreshing or sharing the URL keeps the same search. Country is fixed to `jo`; use the language selector in the page header for Arabic or English city names.
+- `/listings?country=jo&category=CarsForSale&page=1&per_page=20&lang=ar&sort_by=record_posted_time_i&sort_order=desc&title=Toyota&city=1,12&year_from=2018&year_to=2024&price_from=5000&price_to=20000&has_images=true&has_reels=false&has_videos=false&premium=false` browses Solr listings. Search filters (including title, city IDs, year/price ranges, and image/reel/video/premium toggles), language, sorting, and pagination live in the URL, so refreshing or sharing the URL keeps the same search. Country is fixed to `jo`; use the language selector in the page header for Arabic or English city names.
+
+The browse form accepts one or more numeric city IDs separated by commas, optional minimum/maximum model year (1900–2100), and optional minimum/maximum integer price in the Solr index currency. Leave a range endpoint blank to apply only the other endpoint.
 
 The Solr endpoint maps image filenames to the remote preview service at `https://arbokv2-images.sooqdev1.com/previews/640x480`.
 

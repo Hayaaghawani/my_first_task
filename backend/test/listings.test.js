@@ -33,6 +33,11 @@ test('validates country, category, paging, and language parameters', () => {
     hasReels: false,
     hasVideos: false,
     premium: false,
+    yearFrom: undefined,
+    yearTo: undefined,
+    priceFrom: undefined,
+    priceTo: undefined,
+    cityIds: [],
   });
 
   for (const [query, field] of [
@@ -103,11 +108,26 @@ test('builds a Solr select URL with category filters, duplicate and expiry filte
     'record_expiration_time_i:[1800000000 TO *]',
     'image_count_i:[1 TO *]',
     'with_reels_i:1',
-    'newest_reel_date_i:[1799913600 TO 1800000000]',
     'with_video_i:1',
-    'newest_video_date_i:[1799913600 TO 1800000000]',
     'status_i:301',
   ]);
+
+  const rangeAndCityUrl = buildSelectUrl({
+    baseUrl: 'http://solr.test/solr',
+    countryCore: 'country12',
+    category: 'CarsForSale',
+    start: 0,
+    rows: 20,
+    yearFrom: 2018,
+    yearTo: 2024,
+    priceFrom: 5000,
+    priceTo: 20000,
+    cityIds: [1, 12],
+  });
+  assert.ok(rangeAndCityUrl.searchParams.getAll('fq').includes('cp_Car_Year_value_i:[2018 TO 2024]'));
+  assert.ok(rangeAndCityUrl.searchParams.getAll('fq').includes('price_d:[5000 TO 20000]'));
+  assert.ok(rangeAndCityUrl.searchParams.getAll('fq').includes('-add_on_hide_price_i:1'));
+  assert.ok(rangeAndCityUrl.searchParams.getAll('fq').includes('city_id:(1 OR 12)'));
 
   const titleFilterUrl = buildSelectUrl({
     baseUrl: 'http://solr.test/solr',
@@ -202,6 +222,11 @@ test('calculates page offsets and metadata from Solr numFound', async () => {
     hasReels: true,
     hasVideos: false,
     premium: true,
+    yearFrom: 2018,
+    yearTo: 2024,
+    priceFrom: 5000,
+    priceTo: 20000,
+    cityIds: [1, 12],
   }, {
     nowSeconds: 1_800_000_000,
     solrSearch: async (options) => {
@@ -219,6 +244,11 @@ test('calculates page offsets and metadata from Solr numFound', async () => {
   assert.equal(searchOptions.hasReels, true);
   assert.equal(searchOptions.hasVideos, false);
   assert.equal(searchOptions.premium, true);
+  assert.equal(searchOptions.yearFrom, 2018);
+  assert.equal(searchOptions.yearTo, 2024);
+  assert.equal(searchOptions.priceFrom, 5000);
+  assert.equal(searchOptions.priceTo, 20000);
+  assert.deepEqual(searchOptions.cityIds, [1, 12]);
   assert.deepEqual(result, {
     items: [{
       id: 21,

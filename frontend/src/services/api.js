@@ -49,6 +49,11 @@ export async function fetchListings({
   has_reels: hasReels = 'false',
   has_videos: hasVideos = 'false',
   premium = 'false',
+  city = '',
+  year_from: yearFrom = '',
+  year_to: yearTo = '',
+  price_from: priceFrom = '',
+  price_to: priceTo = '',
 }) {
   const params = new URLSearchParams({
     country,
@@ -65,6 +70,17 @@ export async function fetchListings({
   });
   if (title.trim()) {
     params.set('title', title.trim());
+  }
+  for (const [name, value] of [
+    ['city', city],
+    ['year_from', yearFrom],
+    ['year_to', yearTo],
+    ['price_from', priceFrom],
+    ['price_to', priceTo],
+  ]) {
+    if (value !== '' && value !== undefined && value !== null) {
+      params.set(name, String(value));
+    }
   }
 
   let response;

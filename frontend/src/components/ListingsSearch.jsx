@@ -16,6 +16,11 @@ const DEFAULT_QUERY = {
   has_reels: 'false',
   has_videos: 'false',
   premium: 'false',
+  city: '',
+  year_from: '',
+  year_to: '',
+  price_from: '',
+  price_to: '',
 };
 
 function readQueryFromUrl() {
@@ -58,6 +63,17 @@ function submitSearch(event, language) {
   params.set('country', 'jo');
   params.set('lang', language);
   params.set('page', '1');
+  for (const field of ['city', 'year_from', 'year_to', 'price_from', 'price_to']) {
+    if (!params.get(field)?.trim()) {
+      params.delete(field);
+    }
+  }
+  if (params.has('city')) {
+    params.set(
+      'city',
+      params.get('city').split(',').map((cityId) => cityId.trim()).join(','),
+    );
+  }
   for (const field of ['has_images', 'has_reels', 'has_videos', 'premium']) {
     params.set(field, event.currentTarget.elements.namedItem(field).checked ? 'true' : 'false');
   }
@@ -131,6 +147,71 @@ export default function ListingsSearch() {
               maxLength={200}
               autoComplete="off"
               placeholder="Search listing titles"
+            />
+          </label>
+          <label>
+            City IDs
+            <input
+              name="city"
+              type="text"
+              defaultValue={query.city}
+              inputMode="numeric"
+              autoComplete="off"
+              placeholder="e.g. 1, 12"
+              aria-describedby="city-filter-hint"
+            />
+            <span className="field-hint" id="city-filter-hint">
+              Enter one or more city IDs, separated by commas.
+            </span>
+          </label>
+          <label>
+            Year from
+            <input
+              name="year_from"
+              type="number"
+              min="1900"
+              max="2100"
+              step="1"
+              defaultValue={query.year_from}
+              placeholder="e.g. 2018"
+            />
+          </label>
+          <label>
+            Year to
+            <input
+              name="year_to"
+              type="number"
+              min="1900"
+              max="2100"
+              step="1"
+              defaultValue={query.year_to}
+              placeholder="e.g. 2024"
+            />
+          </label>
+          <label>
+            Minimum price
+            <input
+              name="price_from"
+              type="number"
+              min="1"
+              step="1"
+              defaultValue={query.price_from}
+              placeholder="No minimum"
+              aria-describedby="price-filter-hint"
+            />
+            <span className="field-hint" id="price-filter-hint">
+              Uses the price currency in the Solr index.
+            </span>
+          </label>
+          <label>
+            Maximum price
+            <input
+              name="price_to"
+              type="number"
+              min="1"
+              step="1"
+              defaultValue={query.price_to}
+              placeholder="No maximum"
             />
           </label>
           <label>
@@ -210,13 +291,23 @@ export default function ListingsSearch() {
               {(query.has_images === 'true'
                 || query.has_reels === 'true'
                 || query.has_videos === 'true'
-                || query.premium === 'true') && (
+                || query.premium === 'true'
+                || query.city
+                || query.year_from
+                || query.year_to
+                || query.price_from
+                || query.price_to) && (
                 <p>
                   Active filters:
                   {query.has_images === 'true' && ' images'}
                   {query.has_reels === 'true' && ' reels'}
                   {query.has_videos === 'true' && ' videos'}
                   {query.premium === 'true' && ' premium'}
+                  {query.city && ` city IDs ${query.city}`}
+                  {(query.year_from || query.year_to)
+                    && ` years ${query.year_from || 'any'}–${query.year_to || 'any'}`}
+                  {(query.price_from || query.price_to)
+                    && ` price ${query.price_from || 'any'}–${query.price_to || 'any'}`}
                 </p>
               )}
             </div>
