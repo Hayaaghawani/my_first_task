@@ -12,7 +12,7 @@ const SELECTED_FIELDS = [
 ];
 
 function escapeSolrPhrase(value) {
-  return value.replace(/[+\-!(){}[\]^"~*?:\\/]/g, '\\$&');
+  return value.replace(/[+\-!(){}[\]^"~*?:\\/]/g, '\\$&'); //improve by comments
 }
 
 class SolrError extends Error {
@@ -33,15 +33,40 @@ function buildSelectUrl({
   sortBy = 'record_posted_time_i',
   sortOrder = 'desc',
   title = '',
+  hasImages = false,
+  hasReels = false,
+  hasVideos = false,
+  premium = false,
 }) {
   const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   const url = new URL(`${countryCore}/select`, normalizedBaseUrl);
+  const currentTimeSeconds = nowSeconds ?? Math.floor(Date.now() / 1000);
   url.searchParams.set('q', '*:*');
   url.searchParams.append('fq', `tag_2_reporting_name_s:${category}`);
   url.searchParams.append('fq', 'duplicate_i:0');
-  url.searchParams.append('fq', `record_expiration_time_i:[${nowSeconds} TO *]`);
+  url.searchParams.append('fq', `record_expiration_time_i:[${currentTimeSeconds} TO *]`);
   if (title) {
     url.searchParams.append('fq', `title_t:"${escapeSolrPhrase(title)}"`);
+  }
+  if (hasImages) {
+    url.searchParams.append('fq', 'image_count_i:[1 TO *]');
+  }
+  if (hasReels) {
+    url.searchParams.append('fq', 'with_reels_i:1');
+    url.searchParams.append(
+      'fq',
+      `newest_reel_date_i:[${currentTimeSeconds - 86400} TO ${currentTimeSeconds}]`,
+    );
+  }
+  if (hasVideos) {
+    url.searchParams.append('fq', 'with_video_i:1');
+    url.searchParams.append(
+      'fq',
+      `newest_video_date_i:[${currentTimeSeconds - 86400} TO ${currentTimeSeconds}]`,
+    );
+  }
+  if (premium) {
+    url.searchParams.append('fq', 'status_i:301');
   }
   const sort = sortBy === 'post_id'
     ? `post_id ${sortOrder}`
@@ -49,6 +74,7 @@ function buildSelectUrl({
   url.searchParams.set('sort', sort);
   url.searchParams.set('start', String(start));
   url.searchParams.set('rows', String(rows));
+
   url.searchParams.set('fl', SELECTED_FIELDS.join(','));
   url.searchParams.set('wt', 'json');
   return url;
@@ -57,6 +83,7 @@ function buildSelectUrl({
 async function searchListings(options, { fetchImpl = fetch, timeoutMs = solrTimeoutMs } = {}) {
   const url = buildSelectUrl(options);
   let response;
+  let body;
 
   try {
     response = await fetchImpl(url, { signal: AbortSignal.timeout(timeoutMs) });
@@ -68,7 +95,6 @@ async function searchListings(options, { fetchImpl = fetch, timeoutMs = solrTime
     throw new SolrError(`Solr returned HTTP ${response.status}`);
   }
 
-  let body;
   try {
     body = await response.json();
   } catch (error) {

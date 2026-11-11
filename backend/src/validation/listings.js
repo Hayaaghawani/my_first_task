@@ -21,6 +21,26 @@ function parsePositiveInteger(value, field, defaultValue, maximum = Number.MAX_S
   return { value: parsed };
 }
 
+function parseToggle(query, field) {
+  const value = query[field];
+
+  if (value === undefined) {
+    return { value: false };
+  }
+
+  if (value === 'true' || value === '1') {
+    return { value: true };
+  }
+
+  if (value === 'false' || value === '0') {
+    return { value: false };
+  }
+
+  return {
+    error: invalidParameter(field, `${field} must be true, false, 1, or 0`),
+  };
+}
+
 function validateListingsQuery(query) {
   const country = query.country;
   if (typeof country !== 'string' || !country.trim()) {
@@ -71,6 +91,18 @@ function validateListingsQuery(query) {
     return { error: invalidParameter('title', 'title must be text no longer than 200 characters') };
   }
 
+  const hasImages = parseToggle(query, 'has_images');
+  if (hasImages.error) return { error: hasImages.error };
+
+  const hasReels = parseToggle(query, 'has_reels');
+  if (hasReels.error) return { error: hasReels.error };
+
+  const hasVideos = parseToggle(query, 'has_videos');
+  if (hasVideos.error) return { error: hasVideos.error };
+
+  const premium = parseToggle(query, 'premium');
+  if (premium.error) return { error: premium.error };
+
   return {
     value: {
       country: normalizedCountry,
@@ -82,6 +114,10 @@ function validateListingsQuery(query) {
       sortBy,
       sortOrder,
       title: title.trim(),
+      hasImages: hasImages.value,
+      hasReels: hasReels.value,
+      hasVideos: hasVideos.value,
+      premium: premium.value,
     },
   };
 }

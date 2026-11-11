@@ -47,7 +47,12 @@ async function getListings(query, { solrSearch = searchListings, nowSeconds } = 
     sortBy: query.sortBy,
     sortOrder: query.sortOrder,
     title: query.title,
+    hasImages: query.hasImages,
+    hasReels: query.hasReels,
+    hasVideos: query.hasVideos,
+    premium: query.premium,
     nowSeconds,
+
   });
 
   return {
