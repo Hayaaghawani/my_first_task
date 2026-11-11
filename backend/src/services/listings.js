@@ -50,7 +50,13 @@ async function getListings(query, { solrSearch = searchListings, nowSeconds } = 
     hasImages: query.hasImages,
     hasReels: query.hasReels,
     hasVideos: query.hasVideos,
+    cityIds: query.cityIds,
+    yearFrom: query.yearFrom,
+    yearTo: query.yearTo,
+    priceFrom: query.priceFrom,
+    priceTo: query.priceTo,
     premium: query.premium,
+
     nowSeconds,
 
   });

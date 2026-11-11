@@ -37,6 +37,11 @@ function buildSelectUrl({
   hasReels = false,
   hasVideos = false,
   premium = false,
+  cityIds = [], 
+  yearFrom,
+  yearTo,
+  priceFrom,
+  priceTo,
 }) {
   const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   const url = new URL(`${countryCore}/select`, normalizedBaseUrl);
@@ -60,6 +65,24 @@ function buildSelectUrl({
   if (premium) {
     url.searchParams.append('fq', 'status_i:301');
   }
+  if (yearFrom !== undefined || yearTo !== undefined) {
+  url.searchParams.append(
+    'fq',
+    `cp_Car_Year_value_i:[${yearFrom ?? '*'} TO ${yearTo ?? '*'}]`,
+  );
+}
+
+if (priceFrom !== undefined || priceTo !== undefined) {
+  url.searchParams.append(
+    'fq',
+    `price_d:[${priceFrom ?? '*'} TO ${priceTo ?? '*'}]`,
+  );
+  url.searchParams.append('fq', '-add_on_hide_price_i:1');
+}
+
+if (cityIds.length > 0) {
+  url.searchParams.append('fq', `city_id:(${cityIds.join(' OR ')})`);
+}
   const sort = sortBy === 'post_id'
     ? `post_id ${sortOrder}`
     : `record_posted_time_i ${sortOrder},post_id ${sortOrder}`;
