@@ -37,8 +37,9 @@ function mapSolrDocument(doc, lang = 'ar') {
   };
 }
 
-async function getListings(query, { solrSearch = searchListings, nowSeconds } = {}) {
-  const result = await solrSearch({
+
+function buildInputQuery(query, nowSeconds) {
+  return {
     countryCore: query.countryCore,
     category: query.category,
     start: (query.page - 1) * query.perPage,
@@ -50,21 +51,29 @@ async function getListings(query, { solrSearch = searchListings, nowSeconds } = 
     hasImages: query.hasImages,
     hasReels: query.hasReels,
     hasVideos: query.hasVideos,
-    cityIds: query.cityIds,
+    city: query.city,
     yearFrom: query.yearFrom,
     yearTo: query.yearTo,
     priceFrom: query.priceFrom,
     priceTo: query.priceTo,
     premium: query.premium,
-
     nowSeconds,
-
-  });
-
+  };
+}
+function formatQueryResponse(result, query ){
   return {
     items: result.docs.map((doc) => mapSolrDocument(doc, query.lang)),
     meta: getPagingMeta(query.page, query.perPage, result.total),
   };
+}
+
+
+async function getListings(query, { solrSearch = searchListings, nowSeconds } = {}) {
+  const inputQuery = buildInputQuery(query, nowSeconds);
+  const result = await solrSearch(inputQuery);
+
+  const formattedResponse = formatQueryResponse(result, query);
+  return formattedResponse;
 }
 
 module.exports = { getListings, getPagingMeta, mapSolrDocument };

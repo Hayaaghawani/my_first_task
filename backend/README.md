@@ -64,6 +64,8 @@ The request selects the country core and filters by the requested `tag_2_reporti
 
 The response maps `post_id`, title, price/currency, the city name selected by `lang`, image URL, and image count. Solr connection errors, timeouts, unsuccessful HTTP responses, or invalid Solr responses return `502` without terminating the Node.js process.
 
+The localized city dropdown is populated by `GET /listings/cities?country=jo&category=CarsForSale&lang=en`. This endpoint returns city names from the `city_name_en_s` facet for English or `city_name_s` for Arabic. Its Solr facet request uses the same category, duplicate, and future-expiry filters as listing searches. Listing searches accept one selected localized `city` name and filter the matching city-name field; they do not accept city IDs.
+
 ### Solr query parameters and errors
 
 - `400`: invalid or missing parameter; response has `error.field` identifying the parameter.

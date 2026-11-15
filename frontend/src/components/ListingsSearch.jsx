@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchListings } from '../services/api.js';
+import { fetchCityOptions, fetchListings } from '../services/api.js';
 import { FILTER_LABELS } from '../config/filterLabels.js';
 import ErrorMessage from './ErrorMessage.jsx';
 import Loading from './Loading.jsx';
@@ -61,19 +61,17 @@ function formatPrice(price, currency) {
 function submitSearch(event, language) {
   event.preventDefault();
   const params = new URLSearchParams(new FormData(event.currentTarget));
+  const [sortBy, sortOrder] = params.get('sort').split('|');
+  params.delete('sort');
   params.set('country', 'jo');
   params.set('lang', language);
   params.set('page', '1');
+  params.set('sort_by', sortBy);
+  params.set('sort_order', sortOrder);
   for (const field of ['city', 'year_from', 'year_to', 'price_from', 'price_to']) {
     if (!params.get(field)?.trim()) {
       params.delete(field);
     }
-  }
-  if (params.has('city')) {
-    params.set(
-      'city',
-      params.get('city').split(',').map((cityId) => cityId.trim()).join(','),
-    );
   }
   for (const field of ['has_images', 'has_reels', 'has_videos', 'premium']) {
     params.set(field, event.currentTarget.elements.namedItem(field).checked ? 'true' : 'false');
@@ -84,6 +82,9 @@ function submitSearch(event, language) {
 export default function ListingsSearch() {
   const [query] = useState(readQueryFromUrl);
   const [result, setResult] = useState(null);
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(true);
+  const [citiesError, setCitiesError] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const language = query.lang === 'en' ? 'en' : 'ar';
@@ -106,6 +107,35 @@ export default function ListingsSearch() {
       .finally(() => {
         if (active) {
           setLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [query]);
+
+  useEffect(() => {
+    let active = true;
+
+    fetchCityOptions({
+      country: query.country,
+      category: query.category,
+      lang: query.lang,
+    })
+      .then((options) => {
+        if (active) {
+          setCities(options);
+        }
+      })
+      .catch((requestError) => {
+        if (active) {
+          setCitiesError(requestError.message || 'Could not load cities');
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setCitiesLoading(false);
         }
       });
 
@@ -154,18 +184,26 @@ export default function ListingsSearch() {
           </label>
           <label>
             {label('city')}
-            <input
+            <select
               name="city"
-              type="text"
               defaultValue={query.city}
-              inputMode="numeric"
-              autoComplete="off"
-              placeholder="e.g. 1, 12"
-              aria-describedby="city-filter-hint"
-            />
-            <span className="field-hint" id="city-filter-hint">
-              Enter one or more city IDs, separated by commas.
-            </span>
+              disabled={citiesLoading || Boolean(citiesError)}
+              aria-describedby={citiesError ? 'city-filter-hint' : undefined}
+            >
+              <option value="">
+                {citiesLoading
+                  ? (language === 'ar' ? 'جارٍ تحميل المدن…' : 'Loading cities…')
+                  : (language === 'ar' ? 'كل المدن' : 'All cities')}
+              </option>
+              {cities.map((city) => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+            {citiesError && (
+              <span className="field-hint" id="city-filter-hint" role="status">
+                {citiesError}
+              </span>
+            )}
           </label>
           <fieldset className="range-filter">
             <legend>{label('year')}</legend>
@@ -242,17 +280,15 @@ export default function ListingsSearch() {
             </select>
           </label>
           <label>
-            Sort by
-            <select name="sort_by" defaultValue={query.sort_by}>
-              <option value="record_posted_time_i">Date posted</option>
-              <option value="post_id">Listing ID</option>
-            </select>
-          </label>
-          <label>
-            Sort direction
-            <select name="sort_order" defaultValue={query.sort_order}>
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
+            Sort results
+            <select
+              name="sort"
+              defaultValue={`${query.sort_by}|${query.sort_order}`}
+            >
+              <option value="record_posted_time_i|desc">Date posted (newest first)</option>
+              <option value="record_posted_time_i|asc">Date posted (oldest first)</option>
+              <option value="post_id|desc">Listing ID (high to low)</option>
+              <option value="post_id|asc">Listing ID (low to high)</option>
             </select>
           </label>
           <label className="filter-toggle">
@@ -322,7 +358,7 @@ export default function ListingsSearch() {
                   {query.has_reels === 'true' && ' reels'}
                   {query.has_videos === 'true' && ' videos'}
                   {query.premium === 'true' && ' premium'}
-                  {query.city && ` city IDs ${query.city}`}
+                  {query.city && ` city ${query.city}`}
                   {(query.year_from || query.year_to)
                     && ` years ${query.year_from || 'any'}–${query.year_to || 'any'}`}
                   {(query.price_from || query.price_to)

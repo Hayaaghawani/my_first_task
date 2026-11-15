@@ -9,6 +9,7 @@ export default function App() {
   function changeLanguage(event) {
     const params = new URLSearchParams(window.location.search);
     params.set('lang', event.target.value);
+    params.delete('city');
     if (!params.has('country')) params.set('country', 'jo');
     if (!params.has('category')) params.set('category', 'CarsForSale');
     window.location.assign(`/listings?${params}`);

@@ -6,8 +6,17 @@ const test = require('node:test');
 const config = require('../src/config');
 const app = require('../src/app');
 const { getPagingMeta, getListings, mapSolrDocument } = require('../src/services/listings');
-const { buildSelectUrl, SolrError, searchListings } = require('../src/solr');
-const { validateListingsQuery } = require('../src/validation/listings');
+const {
+  buildCitiesUrl,
+  buildSelectUrl,
+  SolrError,
+  searchCities,
+  searchListings,
+} = require('../src/solr');
+const {
+  validateCityOptionsQuery,
+  validateListingsQuery,
+} = require('../src/validation/listings');
 
 test('requires a valid Solr URL at startup', () => {
   assert.throws(() => config.assertSolrConfigured(''), /SOLR_URL/);
@@ -37,7 +46,7 @@ test('validates country, category, paging, and language parameters', () => {
     yearTo: undefined,
     priceFrom: undefined,
     priceTo: undefined,
-    cityIds: [],
+    city: '',
   });
 
   for (const [query, field] of [
@@ -64,6 +73,11 @@ test('validates country, category, paging, and language parameters', () => {
     category: 'CarsForSale',
     per_page: '20',
   }).value.perPage, 20);
+  assert.equal(validateListingsQuery({
+    country: 'jo',
+    category: 'CarsForSale',
+    city: ' Amman ',
+  }).value.city, 'Amman');
 });
 
 test('builds a Solr select URL with category filters, duplicate and expiry filters, and stable sorting', () => {
@@ -122,12 +136,23 @@ test('builds a Solr select URL with category filters, duplicate and expiry filte
     yearTo: 2024,
     priceFrom: 5000,
     priceTo: 20000,
-    cityIds: [1, 12],
+    city: 'Amman',
   });
   assert.ok(rangeAndCityUrl.searchParams.getAll('fq').includes('cp_Car_Year_value_i:[2018 TO 2024]'));
   assert.ok(rangeAndCityUrl.searchParams.getAll('fq').includes('price_d:[5000 TO 20000]'));
   assert.ok(rangeAndCityUrl.searchParams.getAll('fq').includes('-add_on_hide_price_i:1'));
-  assert.ok(rangeAndCityUrl.searchParams.getAll('fq').includes('city_id:(1 OR 12)'));
+  assert.ok(rangeAndCityUrl.searchParams.getAll('fq').includes('city_name_s:"Amman"'));
+
+  const englishCityUrl = buildSelectUrl({
+    baseUrl: 'http://solr.test/solr',
+    countryCore: 'country12',
+    category: 'CarsForSale',
+    start: 0,
+    rows: 20,
+    lang: 'en',
+    city: 'Amman',
+  });
+  assert.ok(englishCityUrl.searchParams.getAll('fq').includes('city_name_en_s:"Amman"'));
 
   const titleFilterUrl = buildSelectUrl({
     baseUrl: 'http://solr.test/solr',
@@ -183,6 +208,65 @@ test('builds a Solr select URL with category filters, duplicate and expiry filte
   assert.equal(idDescendingUrl.searchParams.get('sort'), 'post_id desc');
 });
 
+test('builds localized city facets and parses city names', async () => {
+  const url = buildCitiesUrl({
+    baseUrl: 'http://solr.test/solr',
+    countryCore: 'country12',
+    category: 'CarsForSale',
+    lang: 'en',
+    nowSeconds: 1_800_000_000,
+  });
+  assert.equal(url.pathname, '/solr/country12/select');
+  assert.equal(url.searchParams.get('facet.field'), 'city_name_en_s');
+  assert.equal(url.searchParams.get('rows'), '0');
+  assert.deepEqual(url.searchParams.getAll('fq'), [
+    'tag_2_reporting_name_s:CarsForSale',
+    'duplicate_i:0',
+    'record_expiration_time_i:[1800000000 TO *]',
+  ]);
+
+  let requestedUrl;
+  const cities = await searchCities({
+    baseUrl: 'http://solr.test/solr',
+    countryCore: 'country12',
+    category: 'CarsForSale',
+    lang: 'en',
+    nowSeconds: 1_800_000_000,
+  }, {
+    fetchImpl: async (requestUrl) => {
+      requestedUrl = new URL(requestUrl);
+      return {
+        ok: true,
+        json: async () => ({
+          facet_counts: {
+            facet_fields: {
+              city_name_en_s: ['Zarqa', 5, 'Amman', 3, 'Amman', 1],
+            },
+          },
+        }),
+      };
+    },
+  });
+
+  assert.equal(requestedUrl.searchParams.get('facet.field'), 'city_name_en_s');
+  assert.deepEqual(cities, ['Amman', 'Zarqa']);
+
+  assert.deepEqual(validateCityOptionsQuery({
+    country: 'jo',
+    category: 'CarsForSale',
+    lang: 'ar',
+  }).value, {
+    country: 'jo',
+    countryCore: 'country12',
+    category: 'CarsForSale',
+    lang: 'ar',
+  });
+  assert.equal(validateCityOptionsQuery({
+    country: 'jo',
+    category: 'Cars For Sale',
+  }).error.field, 'category');
+});
+
 test('maps Solr documents and selects the requested city language', () => {
   const document = {
     post_id: 123,
@@ -203,6 +287,53 @@ test('maps Solr documents and selects the requested city language', () => {
     city: 'Amman',
     image: 'https://arbokv2-images.sooqdev1.com/previews/640x480/cars/car%201.webp',
     image_count: 4,
+  });
+
+  test('returns localized city options and maps Solr city failures to 502', async () => {
+    const originalFetch = global.fetch;
+    const server = app.listen(0);
+
+    try {
+      await new Promise((resolve) => server.once('listening', resolve));
+      const port = server.address().port;
+      let requestedUrl;
+      global.fetch = async (url) => {
+        requestedUrl = new URL(url);
+        return {
+          ok: true,
+          json: async () => ({
+            facet_counts: {
+              facet_fields: {
+                city_name_en_s: ['Amman', 8, 'Zarqa', 4],
+              },
+            },
+          }),
+        };
+      };
+
+      const response = await requestJson(
+        port,
+        '/listings/cities?country=jo&category=CarsForSale&lang=en',
+      );
+      assert.equal(response.status, 200);
+      assert.deepEqual(response.body, { cities: ['Amman', 'Zarqa'] });
+      assert.equal(requestedUrl.searchParams.get('facet.field'), 'city_name_en_s');
+
+      global.fetch = async () => {
+        throw new Error('connection refused');
+      };
+      const failedResponse = await requestJson(
+        port,
+        '/listings/cities?country=jo&category=CarsForSale&lang=en',
+      );
+      assert.equal(failedResponse.status, 502);
+      assert.deepEqual(failedResponse.body, { error: { message: 'Solr is unavailable' } });
+    } finally {
+      global.fetch = originalFetch;
+      await new Promise((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
   });
   assert.equal(mapSolrDocument({ image_uri_s: null }, 'ar').image, '');
 });
@@ -226,7 +357,7 @@ test('calculates page offsets and metadata from Solr numFound', async () => {
     yearTo: 2024,
     priceFrom: 5000,
     priceTo: 20000,
-    cityIds: [1, 12],
+    city: 'Amman',
   }, {
     nowSeconds: 1_800_000_000,
     solrSearch: async (options) => {
@@ -248,7 +379,7 @@ test('calculates page offsets and metadata from Solr numFound', async () => {
   assert.equal(searchOptions.yearTo, 2024);
   assert.equal(searchOptions.priceFrom, 5000);
   assert.equal(searchOptions.priceTo, 20000);
-  assert.deepEqual(searchOptions.cityIds, [1, 12]);
+  assert.equal(searchOptions.city, 'Amman');
   assert.deepEqual(result, {
     items: [{
       id: 21,

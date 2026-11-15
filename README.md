@@ -15,7 +15,7 @@ backend/
     solr.js                  # Solr select URL, timeout, and response validation
     validation/listings.js  # /listings query validation
     services/listings.js    # Solr result mapping and paging metadata
-    routes/listings.js      # GET /listings
+    routes/listings.js      # GET /listings and /listings/cities
     routes/listing.js        # GET /api/listing/:id
     services/listing.js      # Cache, query, and response formatting
     queries/listing.js       # Parameterized SELECT statements
@@ -96,6 +96,19 @@ GET http://localhost:3001/listings?country=jo&category=CarsForSale&page=1&per_pa
 ```
 
 It supports configurable country cores, category and optional title phrase filters, pagination, sorting by post time or listing ID, Arabic or English city names, and optional image/reel/video/premium toggles. Invalid or missing query parameters return `400`; an unavailable or timing-out Solr server returns `502`. See the [backend README](./backend/README.md#solr-listings-endpoint) for parameter rules, Solr configuration, response details, and tests.
+
+## Validation structure
+
+Validation runs at two boundaries:
+
+1. `frontend/src/validation/listings.js` validates values before the browser calls the API. This gives quick feedback and avoids sending known-invalid filters.
+2. `backend/src/validation/listings.js` validates every incoming query independently. This is the correctness boundary because frontend checks can be bypassed.
+3. The backend schema converts validated query strings into the typed, camelCase object used by `services/listings.js`. Services and Solr query builders should receive validated values, not read `req.query` directly.
+4. Routes map the first Zod issue to the existing HTTP `400` response shape. Solr failures return `502`; unexpected application errors return `500`.
+
+When adding a filter, define its accepted form and bounds in the backend schema, map it to the service input, use only that validated value in the Solr request, then add the matching frontend schema rule and form constraints. Keep cross-field rules (such as lower bound not exceeding upper bound) in schema refinements. Avoid one-off parsing helpers in route handlers.
+
+For example, years accept whole numbers from 1900 through 2100. A value such as `9999999999` receives a field-specific `400` on the backend and is rejected in the frontend before fetch, so it cannot be misreported as a Solr outage. Listing IDs must also be positive, safe integers before conversion and database use.
 
 ## Production
 

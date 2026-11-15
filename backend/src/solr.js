@@ -37,7 +37,7 @@ function buildSelectUrl({
   hasReels = false,
   hasVideos = false,
   premium = false,
-  cityIds = [], 
+  city = '',
   yearFrom,
   yearTo,
   priceFrom,
@@ -80,10 +80,11 @@ if (priceFrom !== undefined || priceTo !== undefined) {
   url.searchParams.append('fq', '-add_on_hide_price_i:1');
 }
 
-if (cityIds.length > 0) {
+if (city) {
+  const cityField = lang === 'en' ? 'city_name_en_s' : 'city_name_s';
   url.searchParams.append(
     'fq',
-    `{!tag=CITY}city_id:(${cityIds.join(' OR ')})`,
+    `${cityField}:"${escapeSolrPhrase(city)}"`,
   );
 }
   const sort = sortBy === 'post_id'
@@ -94,6 +95,30 @@ if (cityIds.length > 0) {
   url.searchParams.set('rows', String(rows));
 
   url.searchParams.set('fl', SELECTED_FIELDS.join(','));
+  url.searchParams.set('wt', 'json');
+  return url;
+}
+
+function buildCitiesUrl({
+  baseUrl = solrUrl,
+  countryCore,
+  category,
+  lang = 'ar',
+  nowSeconds = Math.floor(Date.now() / 1000),
+}) {
+  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+  const url = new URL(`${countryCore}/select`, normalizedBaseUrl);
+  const cityField = lang === 'en' ? 'city_name_en_s' : 'city_name_s';
+  url.searchParams.set('q', '*:*');
+  url.searchParams.append('fq', `tag_2_reporting_name_s:${category}`);
+  url.searchParams.append('fq', 'duplicate_i:0');
+  url.searchParams.append('fq', `record_expiration_time_i:[${nowSeconds} TO *]`);
+  url.searchParams.set('facet', 'true');
+  url.searchParams.set('facet.field', cityField);
+  url.searchParams.set('facet.limit', '-1');
+  url.searchParams.set('facet.mincount', '1');
+  url.searchParams.set('facet.sort', 'index');
+  url.searchParams.set('rows', '0');
   url.searchParams.set('wt', 'json');
   return url;
 }
@@ -127,4 +152,43 @@ async function searchListings(options, { fetchImpl = fetch, timeoutMs = solrTime
   return { total: result.numFound, docs: result.docs };
 }
 
-module.exports = { SolrError, buildSelectUrl, escapeSolrPhrase, searchListings };
+async function searchCities(options, { fetchImpl = fetch, timeoutMs = solrTimeoutMs } = {}) {
+  const url = buildCitiesUrl(options);
+  let response;
+  let body;
+
+  try {
+    response = await fetchImpl(url, { signal: AbortSignal.timeout(timeoutMs) });
+  } catch (error) {
+    throw new SolrError('Solr request failed', { cause: error });
+  }
+
+  if (!response.ok) {
+    throw new SolrError(`Solr returned HTTP ${response.status}`);
+  }
+
+  try {
+    body = await response.json();
+  } catch (error) {
+    throw new SolrError('Solr returned invalid JSON', { cause: error });
+  }
+
+  const values = body?.facet_counts?.facet_fields?.[
+    options.lang === 'en' ? 'city_name_en_s' : 'city_name_s'
+  ];
+  if (!Array.isArray(values) || values.length % 2 !== 0) {
+    throw new SolrError('Solr response is missing city facets');
+  }
+
+  return [...new Set(values.filter((value, index) => index % 2 === 0 && typeof value === 'string'))]
+    .sort((left, right) => left.localeCompare(right, options.lang));
+}
+
+module.exports = {
+  SolrError,
+  buildCitiesUrl,
+  buildSelectUrl,
+  escapeSolrPhrase,
+  searchCities,
+  searchListings,
+};
