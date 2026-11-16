@@ -1,5 +1,6 @@
 import ListingsSearch from './components/ListingsSearch.jsx';
 import SearchListingPage from './components/SearchListingPage.jsx';
+import { FILTER_LABELS } from './config/filterLabels.js';
 
 export default function App() {
   const isListingsPage = window.location.pathname.replace(/\/+$/, '') === '/listings';
@@ -20,7 +21,7 @@ export default function App() {
       <header className="page-header">
         {isListingsPage && (
           <label className="language-switcher">
-            <span>Language</span>
+            <span>{FILTER_LABELS.language[language]}</span>
             <select value={language} onChange={changeLanguage} aria-label="City language">
               <option value="ar">العربية</option>
               <option value="en">English</option>

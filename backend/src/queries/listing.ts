@@ -1,10 +1,10 @@
-const BASIC_LISTING = `
+export const BASIC_LISTING = `
   SELECT
     p.id,
     p.title,
     p.description,
     p.price            AS price_amount,
-    cu.code      AS price_currency,
+    cu.code            AS price_currency,
     p.has_price,
     p.cities_id        AS city_id,
     c.name             AS city_name,
@@ -13,11 +13,11 @@ const BASIC_LISTING = `
   FROM posts p
   LEFT JOIN cities c ON c.id = p.cities_id
   LEFT JOIN neighborhood n ON n.id = p.neighborhood_id
-  Left JOIN currency cu ON p.price_currency = cu.id
+  LEFT JOIN currency cu ON p.price_currency = cu.id
   WHERE p.id = ?
 `;
 
-const CUSTOM_PARAMS = `
+export const CUSTOM_PARAMS = `
   SELECT
     f.id           AS field_id,
     f.name         AS field_name,
@@ -37,5 +37,3 @@ const CUSTOM_PARAMS = `
     AND v.status = 1
   ORDER BY f.id
 `;
-
-module.exports = { BASIC_LISTING, CUSTOM_PARAMS };

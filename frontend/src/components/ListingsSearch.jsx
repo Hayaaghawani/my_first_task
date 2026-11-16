@@ -52,7 +52,7 @@ function buildPageUrl(query, page) {
 
 function formatPrice(price, currency) {
   if (price === null || price === undefined || price === '') {
-    return 'Contact for price';
+    return null;
   }
 
   return [Number(price).toLocaleString(), currency].filter(Boolean).join(' ');
@@ -154,7 +154,7 @@ export default function ListingsSearch() {
       >
         <div className="browse-fields">
           <label>
-            Country code
+            {label('countryCode')}
             <input
               name="country"
               defaultValue={query.country}
@@ -163,7 +163,7 @@ export default function ListingsSearch() {
             />
           </label>
           <label>
-            Category
+            {label('category')}
             <input
               name="category"
               defaultValue={query.category}
@@ -172,14 +172,14 @@ export default function ListingsSearch() {
             />
           </label>
           <label>
-            Title contains
+            {label('titleContains')}
             <input
               name="title"
               type="search"
               defaultValue={query.title}
               maxLength={200}
               autoComplete="off"
-              placeholder="Search listing titles"
+              placeholder={label('titlePlaceholder')}
             />
           </label>
           <label>
@@ -192,8 +192,8 @@ export default function ListingsSearch() {
             >
               <option value="">
                 {citiesLoading
-                  ? (language === 'ar' ? 'جارٍ تحميل المدن…' : 'Loading cities…')
-                  : (language === 'ar' ? 'كل المدن' : 'All cities')}
+                  ? label('loadingCities')
+                  : label('allCities')}
               </option>
               {cities.map((city) => (
                 <option key={city} value={city}>{city}</option>
@@ -266,13 +266,11 @@ export default function ListingsSearch() {
               </label>
             </div>
             <span className="field-hint" id="price-filter-hint">
-              {language === 'ar'
-                ? 'تُستخدم عملة السعر الموجودة في فهرس Solr.'
-                : 'Uses the price currency in the Solr index.'}
+              {label('solrPriceHint')}
             </span>
           </fieldset>
           <label>
-            Per page
+            {label('perPage')}
             <select name="per_page" defaultValue={query.per_page}>
               {[10, 20, 30, 50].map((size) => (
                 <option key={size} value={size}>{size}</option>
@@ -280,15 +278,15 @@ export default function ListingsSearch() {
             </select>
           </label>
           <label>
-            Sort results
+            {label('sortResults')}
             <select
               name="sort"
               defaultValue={`${query.sort_by}|${query.sort_order}`}
             >
-              <option value="record_posted_time_i|desc">Date posted (newest first)</option>
-              <option value="record_posted_time_i|asc">Date posted (oldest first)</option>
-              <option value="post_id|desc">Listing ID (high to low)</option>
-              <option value="post_id|asc">Listing ID (low to high)</option>
+              <option value="record_posted_time_i|desc">{label('newestFirst')}</option>
+              <option value="record_posted_time_i|asc">{label('oldestFirst')}</option>
+              <option value="post_id|desc">{label('idHighToLow')}</option>
+              <option value="post_id|asc">{label('idLowToHigh')}</option>
             </select>
           </label>
           <label className="filter-toggle">
@@ -324,7 +322,7 @@ export default function ListingsSearch() {
             <span>{label('premium')}</span>
           </label>
         </div>
-        <button type="submit">Search listings</button>
+        <button type="submit">{label('searchListings')}</button>
       </form>
 
       <div className="result-area" aria-live="polite">
@@ -334,14 +332,14 @@ export default function ListingsSearch() {
           <>
             <div className="browse-summary">
               <p>
-                {meta.total.toLocaleString()} listings
+                {meta.total.toLocaleString()} {label('listings')}
                 <span> · </span>
-                Page {meta.page} of {meta.total_pages}
+                {label('page')} {meta.page} {label('of')} {meta.total_pages}
               </p>
               <p>
-                Sorted by {query.sort_by === 'post_id' ? 'listing ID' : 'date posted'}
+                {label('sortedBy')} {query.sort_by === 'post_id' ? label('listingId') : label('datePosted')}
                 {' · '}
-                {query.sort_order === 'asc' ? 'ascending' : 'descending'}
+                {query.sort_order === 'asc' ? label('ascending') : label('descending')}
               </p>
               {(query.has_images === 'true'
                 || query.has_reels === 'true'
@@ -353,21 +351,21 @@ export default function ListingsSearch() {
                 || query.price_from
                 || query.price_to) && (
                 <p>
-                  Active filters:
-                  {query.has_images === 'true' && ' images'}
-                  {query.has_reels === 'true' && ' reels'}
-                  {query.has_videos === 'true' && ' videos'}
-                  {query.premium === 'true' && ' premium'}
-                  {query.city && ` city ${query.city}`}
+                  {label('activeFilters')}
+                  {query.has_images === 'true' && ` ${label('filterImages')}`}
+                  {query.has_reels === 'true' && ` ${label('filterReels')}`}
+                  {query.has_videos === 'true' && ` ${label('filterVideos')}`}
+                  {query.premium === 'true' && ` ${label('filterPremium')}`}
+                  {query.city && ` ${label('filterCity')} ${query.city}`}
                   {(query.year_from || query.year_to)
-                    && ` years ${query.year_from || 'any'}–${query.year_to || 'any'}`}
+                    && ` ${label('filterYears')} ${query.year_from || label('any')}–${query.year_to || label('any')}`}
                   {(query.price_from || query.price_to)
-                    && ` price ${query.price_from || 'any'}–${query.price_to || 'any'}`}
+                    && ` ${label('filterPrice')} ${query.price_from || label('any')}–${query.price_to || label('any')}`}
                 </p>
               )}
             </div>
             {result.items.length === 0 ? (
-              <p className="empty-results">No listings found on this page.</p>
+              <p className="empty-results">{label('noListings')}</p>
             ) : (
               <div className="browse-results">
                 {result.items.map((item) => (
@@ -381,43 +379,45 @@ export default function ListingsSearch() {
                       />
                     ) : (
                       <div className="browse-image browse-image-placeholder" aria-hidden="true">
-                        No image
+                        {label('noImage')}
                       </div>
                     )}
                     <div className="browse-card-content">
-                      <h2>{item.title || 'Untitled listing'}</h2>
-                      <p className="browse-price">{formatPrice(item.price, item.currency)}</p>
+                      <h2>{item.title || label('untitled')}</h2>
+                      <p className="browse-price">
+                        {formatPrice(item.price, item.currency) ?? label('contactForPrice')}
+                      </p>
                       <p className="browse-location">{item.city || '—'}</p>
-                      <p className="browse-image-count">{item.image_count} photos</p>
+                      <p className="browse-image-count">{item.image_count} {label('photos')}</p>
                     </div>
                   </article>
                 ))}
               </div>
             )}
-            <nav className="pagination" aria-label="Listing pages">
+            <nav className="pagination" aria-label={label('pagination')}>
               {meta.page > 1 ? (
                 <a
                   className="pagination-button"
                   href={buildPageUrl(query, meta.page - 1)}
                 >
-                  Previous
+                  {label('previous')}
                 </a>
               ) : (
                 <span className="pagination-button is-disabled" aria-disabled="true">
-                  Previous
+                  {label('previous')}
                 </span>
               )}
-              <span>Page {meta.page}</span>
+              <span>{label('page')} {meta.page}</span>
               {meta.has_next ? (
                 <a
                   className="pagination-button"
                   href={buildPageUrl(query, meta.page + 1)}
                 >
-                  Next
+                  {label('next')}
                 </a>
               ) : (
                 <span className="pagination-button is-disabled" aria-disabled="true">
-                  Next
+                  {label('next')}
                 </span>
               )}
             </nav>

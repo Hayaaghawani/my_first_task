@@ -1,14 +1,49 @@
 import { listingIdSchema, validateListingsInput } from '../validation/listings.js';
+import { FILTER_LABELS } from '../config/filterLabels.js';
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3001')
   .trim()
   .replace(/\/+$/, '');
 
-const ERROR_MESSAGES = {
-  400: 'Invalid ID',
-  404: 'Listing not found',
-  500: 'Something went wrong',
+async function readJsonResponse(response, invalidResponseMessage) {
+  try {
+    return await response.json();
+  } catch {
+    throw new Error(invalidResponseMessage);
+  }
+}
+
+const API_FIELD_LABELS = {
+  id: 'listingId',
+  country: 'countryCode',
+  category: 'category',
+  page: 'page',
+  per_page: 'perPage',
+  lang: 'language',
+  sort_by: 'sortResults',
+  sort_order: 'sortResults',
+  title: 'titleContains',
+  city: 'city',
+  year_from: 'year',
+  year_to: 'year',
+  price_from: 'price',
+  price_to: 'price',
+  has_images: 'hasImages',
+  has_reels: 'hasReels',
+  has_videos: 'hasVideos',
+  premium: 'premium',
 };
+
+function getApiErrorMessage({ body, fallbackMessage, language = 'en' }) {
+  const field = body?.error?.field;
+  const message = body?.error?.message;
+  if (field && message) {
+    const labelKey = API_FIELD_LABELS[field];
+    const label = labelKey ? FILTER_LABELS[labelKey][language] : field;
+    return `${label}: ${message}`;
+  }
+  return message || fallbackMessage;
+}
 
 export async function fetchListing(id) {
   const normalizedId = String(id).trim();
@@ -25,15 +60,14 @@ export async function fetchListing(id) {
     throw new Error('Something went wrong');
   }
 
+  const body = await readJsonResponse(response, 'The listing service returned an invalid response');
   if (!response.ok) {
-    throw new Error(ERROR_MESSAGES[response.status] || 'Something went wrong');
+    throw new Error(getApiErrorMessage({
+      body,
+      fallbackMessage: 'Could not load this listing',
+    }));
   }
-
-  try {
-    return await response.json();
-  } catch {
-    throw new Error('Something went wrong');
-  }
+  return body;
 }
 
 export async function fetchListings({
@@ -65,7 +99,9 @@ export async function fetchListings({
     hasVideos: String(hasVideos), premium: String(premium),
   });
   if (!validation.success) {
-    throw new Error(`${validation.field}: ${validation.message}`);
+    const labelKey = API_FIELD_LABELS[validation.field];
+    const fieldLabel = labelKey ? FILTER_LABELS[labelKey][lang] : validation.field;
+    throw new Error(`${fieldLabel}: ${validation.message}`);
   }
 
   const params = new URLSearchParams({
@@ -103,17 +139,17 @@ export async function fetchListings({
     throw new Error('Could not connect to the listings service');
   }
 
-  let body;
-  try {
-    body = await response.json();
-  } catch {
-    throw new Error('The listings service returned an invalid response');
-  }
+  const body = await readJsonResponse(
+    response,
+    'The listings service returned an invalid response',
+  );
 
   if (!response.ok) {
-    const field = body?.error?.field;
-    const message = body?.error?.message;
-    throw new Error(field ? `${field}: ${message}` : message || 'Could not load listings');
+    throw new Error(getApiErrorMessage({
+      body,
+      fallbackMessage: 'Could not load listings',
+      language: lang,
+    }));
   }
 
   return body;
@@ -129,15 +165,17 @@ export async function fetchCityOptions({ country, category, lang }) {
     throw new Error('Could not connect to the city list service');
   }
 
-  let body;
-  try {
-    body = await response.json();
-  } catch {
-    throw new Error('The city list service returned an invalid response');
-  }
+  const body = await readJsonResponse(
+    response,
+    'The city list service returned an invalid response',
+  );
 
   if (!response.ok) {
-    throw new Error(body?.error?.message || 'Could not load cities');
+    throw new Error(getApiErrorMessage({
+      body,
+      fallbackMessage: 'Could not load cities',
+      language: lang,
+    }));
   }
 
   if (!Array.isArray(body?.cities) || body.cities.some((city) => typeof city !== 'string')) {
