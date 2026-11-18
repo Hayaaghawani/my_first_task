@@ -1,5 +1,5 @@
 import type { ErrorRequestHandler } from "express";
-import { AppError, ErrorCode } from "../errors/app-error.js";
+import { AppError, ErrorCode } from "../errors/app-error";
 
 type ErrorBody = {
   code: ErrorCode;

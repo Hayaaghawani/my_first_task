@@ -1,5 +1,5 @@
 import memjs = require("memjs");
-import type { AppConfig } from "../config/env.js";
+import type { AppConfig } from "../config/env";
 
 export class ListingCache {
   private readonly client: ReturnType<typeof memjs.Client.create>;

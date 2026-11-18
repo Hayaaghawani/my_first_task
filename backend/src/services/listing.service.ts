@@ -1,8 +1,8 @@
 import type { Pool, RowDataPacket } from "mysql2/promise";
-import type { ListingId } from "../schemas/listing-id.schema.js";
-import { CUSTOM_PARAMS, BASIC_LISTING } from "../queries/listing.js";
-import { ListingCache } from "../cache/listing-cache.js";
-import { AppError, ErrorCode } from "../errors/app-error.js";
+import type { ListingId } from "../schemas/listing-id.schema";
+import { CUSTOM_PARAMS, BASIC_LISTING } from "../queries/listing";
+import { ListingCache } from "../cache/listing-cache";
+import { AppError, ErrorCode } from "../errors/app-error";
 
 const LISTING_CACHE_TTL_SECONDS = 3600;
 

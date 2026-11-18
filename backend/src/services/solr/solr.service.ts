@@ -1,11 +1,11 @@
-import { AppError, ErrorCode } from "../../errors/app-error.js";
-import type { CityOptionsQuery, ListingsQuery } from "../../schemas/listings.schema.js";
+import { AppError, ErrorCode } from "../../errors/app-error";
+import type { CityOptionsQuery, ListingsQuery } from "../../schemas/listings.schema";
 import type {
   ListingItem,
   ListingSearchResult,
   ListingsGateway,
-} from "../listings-gateway.js";
-import { SolrQueryBuilder } from "./solr-query.builder.js";
+} from "../listings-gateway";
+import { SolrQueryBuilder } from "./solr-query.builder";
 
 type SolrRecord = Record<string, unknown>;
 type SolrFieldValue = string | number | null | readonly (string | number | null)[];

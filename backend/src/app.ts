@@ -1,11 +1,11 @@
 import express from "express";
-import type { AppConfig } from "./config/env.js";
-import { ListingController } from "./controllers/listing.controller.js";
-import { ListingsController } from "./controllers/listings.controller.js";
-import { errorHandler } from "./middleware/error-handler.js";
-import { notFoundHandler } from "./middleware/not-found.js";
-import { createListingRouter } from "./routes/listing.routes.js";
-import { createListingsRouter } from "./routes/listings.routes.js";
+import type { AppConfig } from "./config/env";
+import { ListingController } from "./controllers/listing.controller";
+import { ListingsController } from "./controllers/listings.controller";
+import { errorHandler } from "./middleware/error-handler";
+import { notFoundHandler } from "./middleware/not-found";
+import { createListingRouter } from "./routes/listing.routes";
+import { createListingsRouter } from "./routes/listings.routes";
 
 type AppDependencies = {
   config: AppConfig;
@@ -21,7 +21,7 @@ export function createApp(dependencies: AppDependencies) {
     if (origin === dependencies.config.frontendOrigin) {
       response.set("Access-Control-Allow-Origin", dependencies.config.frontendOrigin);
       response.set("Vary", "Origin");
-      response.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+      response.set("Access-Control-Allow-Methods", "GET, OPTIONS"); //brief-light request
       response.set("Access-Control-Allow-Headers", "Content-Type");
     }
 

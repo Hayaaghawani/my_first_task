@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
-import { AppError, ErrorCode } from "../errors/app-error.js";
-import type { ListingId } from "../schemas/listing-id.schema.js";
-import { ListingService } from "../services/listing.service.js";
+import { AppError, ErrorCode } from "../errors/app-error";
+import type { ListingId } from "../schemas/listing-id.schema";
+import { ListingService } from "../services/listing.service";
 
 export class ListingController {
   constructor(private readonly listingService: ListingService) {}

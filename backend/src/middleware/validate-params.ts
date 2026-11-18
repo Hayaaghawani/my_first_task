@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 import type { ZodType } from "zod";
-import { AppError, ErrorCode } from "../errors/app-error.js";
+import { AppError, ErrorCode } from "../errors/app-error";
 
 export function validateParams<TOutput>(schema: ZodType<TOutput>): RequestHandler {
   return (request, response, next) => {

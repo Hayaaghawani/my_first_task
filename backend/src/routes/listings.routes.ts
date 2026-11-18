@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { ListingsController } from "../controllers/listings.controller.js";
-import { validateQuery } from "../middleware/validate-query.js";
+import { ListingsController } from "../controllers/listings.controller";
+import { validateQuery } from "../middleware/validate-query";
 import {
   cityOptionsQuerySchema,
   listingsQuerySchema,

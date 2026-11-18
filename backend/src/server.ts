@@ -1,14 +1,14 @@
 import "dotenv/config";
-import { createApp } from "./app.js";
-import { ListingCache } from "./cache/listing-cache.js";
-import { loadConfig } from "./config/env.js";
-import { ListingController } from "./controllers/listing.controller.js";
-import { ListingsController } from "./controllers/listings.controller.js";
-import { createDatabase } from "./db/database.js";
-import { ListingService } from "./services/listing.service.js";
-import { ListingsService } from "./services/listings.service.js";
-import { SolrQueryBuilder } from "./services/solr/solr-query.builder.js";
-import { SolrService } from "./services/solr/solr.service.js";
+import { createApp } from "./app";
+import { ListingCache } from "./cache/listing-cache";
+import { loadConfig } from "./config/env";
+import { ListingController } from "./controllers/listing.controller";
+import { ListingsController } from "./controllers/listings.controller";
+import { createDatabase } from "./db/database";
+import { ListingService } from "./services/listing.service";
+import { ListingsService } from "./services/listings.service";
+import { SolrQueryBuilder } from "./services/solr/solr-query.builder";
+import { SolrService } from "./services/solr/solr.service";
 
 const config = loadConfig();
 const database = createDatabase(config.db);

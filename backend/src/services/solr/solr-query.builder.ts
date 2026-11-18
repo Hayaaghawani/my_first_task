@@ -1,4 +1,4 @@
-import type { CityOptionsQuery, ListingsQuery } from "../../schemas/listings.schema.js";
+import type { CityOptionsQuery, ListingsQuery } from "../../schemas/listings.schema";
 
 type CommonQuery = Pick<ListingsQuery, "countryCore" | "category">;
 

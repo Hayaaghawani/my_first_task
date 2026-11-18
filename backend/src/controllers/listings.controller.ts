@@ -2,8 +2,8 @@ import type { RequestHandler } from "express";
 import type {
   CityOptionsQuery,
   ListingsQuery,
-} from "../schemas/listings.schema.js";
-import { ListingsService } from "../services/listings.service.js";
+} from "../schemas/listings.schema";
+import { ListingsService } from "../services/listings.service";
 
 export class ListingsController {
   constructor(private readonly listingsService: ListingsService) {}
