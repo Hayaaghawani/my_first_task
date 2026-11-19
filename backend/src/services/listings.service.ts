@@ -2,7 +2,7 @@ import type { CityOptionsQuery, ListingsQuery } from "../schemas/listings.schema
 import type {
   ListingItem,
   ListingsGateway,
-} from "./listings-gateway.js";
+} from "./listings-gateway";
 
 export type ListingsResponse = {
   items: ListingItem[];
