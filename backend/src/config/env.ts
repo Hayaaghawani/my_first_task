@@ -29,11 +29,27 @@ function requiredHttpUrl(name: string) {
     .refine(isAbsoluteHttpUrl, `${name} must be an absolute HTTP or HTTPS URL`);
 }
 
+function requiredAmqpUrl(name: string) {
+  return z
+    .string({ error: `${name} is required` })
+    .trim()
+    .min(1, `${name} is required`)
+    .refine((value) => {
+      try {
+        const url = new URL(value);
+        return url.protocol === "amqp:" || url.protocol === "amqps:";
+      } catch {
+        return false;
+      }
+    }, `${name} must be an absolute AMQP or AMQPS URL`);
+}
+
 const envSchema = z.object({
   PORT: positiveInteger("PORT", 65535).default(3001),
   FRONTEND_ORIGIN: requiredHttpUrl("FRONTEND_ORIGIN").default("http://localhost:5173"),
   SOLR_URL: requiredHttpUrl("SOLR_URL"),
   SOLR_TIMEOUT_MS: positiveInteger("SOLR_TIMEOUT_MS", 2 ** 32 - 1).default(3000),
+  RABBITMQ_URL: requiredAmqpUrl("RABBITMQ_URL"),
   DB_HOST: z.string({ error: "DB_HOST is required" }).trim().min(1, "DB_HOST is required"),
   DB_PORT: positiveInteger("DB_PORT", 65535).default(3306),
   DB_USER: z.string({ error: "DB_USER is required" }).trim().min(1, "DB_USER is required"),
@@ -52,6 +68,7 @@ export type AppConfig = {
   frontendOrigin: string;
   solrUrl: string;
   solrTimeoutMs: number;
+  rabbitMqUrl: string;
   db: {
     host: string;
     port: number;
@@ -71,6 +88,7 @@ function toAppConfig(env: z.infer<typeof envSchema>): AppConfig {
     frontendOrigin: env.FRONTEND_ORIGIN,
     solrUrl: env.SOLR_URL,
     solrTimeoutMs: env.SOLR_TIMEOUT_MS,
+    rabbitMqUrl: env.RABBITMQ_URL,
     db: {
       host: env.DB_HOST,
       port: env.DB_PORT,
